@@ -9,7 +9,7 @@ import pandas as pd
 # PAGE CONFIG
 # ─────────────────────────────────────────
 st.set_page_config(
-    page_title="Future-Making Analyzer",
+    page_title="Consumer Future-Making Analyzer",
     page_icon="FM",
     layout="wide"
 )
@@ -24,24 +24,21 @@ DOC_MAX_WORKERS = 5
 DEFAULT_THREAD = "_default_thread_"
 
 # ─────────────────────────────────────────
-# SCOPE / INTERPRETIVE-USE NOTES (paper-grounded caveats only)
+# SCOPE / INTERPRETIVE-USE NOTES
 # ─────────────────────────────────────────
 INTERPRETIVE_USE_NOTE = (
-    "**Interpretive-use note.** The paper defines future-making activities as "
+    "Interpretive-use note: the paper defines future-making activities as "
     "interdependent, entangled, and recursive rather than sequential, and "
     "orientations as situated ways of performing future-making rather than "
-    "fixed consumer types or stable market segments. For comparability, this "
-    "application assigns one dominant activity/orientation per comment plus "
-    "up to two secondary classifications. This is an application-level "
-    "simplification, not a claim that future-making activities or "
-    "orientations are mutually exclusive. Review outputs alongside the "
-    "complete comment, any available context, and relevant behavioral "
-    "evidence."
+    "fixed consumer types or stable market segments. Review outputs "
+    "alongside the complete comment, any available context, and relevant "
+    "behavioral evidence."
 )
 
-HOMEPAGE_DESCRIPTION = f"""
+HOMEPAGE_DESCRIPTION = """
 Use this application to support the mapping of consumer future-making in
-response to a policy or market intervention, as theorized in **"{PAPER_TITLE}."**
+response to a policy or market intervention, as theorized in **"Futures in
+the Making: How Consumers Respond to Future-Oriented Interventions."**
 
 Upload or paste consumer comments, consultation responses, forum posts, or
 social-media conversations. The application classifies each **focal
@@ -50,24 +47,23 @@ posts, or consultation prompts as interpretive context, to identify how
 consumers evaluate, negotiate, and enact preferred futures.
 
 **Scope statement:**
-- The framework was developed through qualitative research on Australian
+
+* The framework was developed through qualitative research on Australian
   Zero Emission Vehicle (ZEV) interventions.
-- The authors expect the insights may apply to other future-oriented
-  intervention contexts, including AI-integrated healthcare.
-- Applying the framework to AI-integrated healthcare is illustrative of
+* The authors expect the insights may apply to other future-oriented
+  intervention contexts.
+* Applying the framework to AI-integrated healthcare is illustrative of
   expected transferability; it is **not** independent empirical validation.
-- Intervention type (Fixed, Bounded, Flexible, or Open) depends on the
+* Intervention type -- Fixed, Bounded, Flexible, or Open -- depends on the
   specific scope and prescriptiveness of the intervention being analyzed,
   not on its general domain.
-- Orientations (Catalyzer, Ambivalent, Resistant, Expander) are situated
-  ways of performing future-making, **not** fixed consumer types or market
-  segments.
-- Results require interpretation alongside context and relevant behavioral
-  evidence. Institutional or policy documents may be used to define the
-  prescribed future or supply consultation context; they are not
-  themselves classified as consumer orientations.
-
-*Based on:* **"{PAPER_TITLE}"**
+* Orientations -- Catalyzer, Ambivalent, Resistant, and Expander -- are
+  situated ways of performing future-making, **not** fixed consumer types
+  or market segments.
+* Results require interpretation alongside context and relevant
+  behavioral evidence. Institutional or policy documents may be used to
+  define the prescribed future or supply consultation context; they are
+  not themselves classified as consumer orientations.
 """
 
 # ─────────────────────────────────────────
@@ -82,6 +78,23 @@ VALID_CONTEXT_TYPES = {
     "PARENT_REPLY", "THREAD_WINDOW", "ORIGINAL_POST", "CONSULTATION_PROMPT", "NONE"
 }
 
+CONTEXT_TYPE_CHOICES = [
+    ("No context", "NONE",
+     "Use when the focal comment must be interpreted on its own."),
+    ("Parent comment", "PARENT_REPLY",
+     "The specific comment to which the focal comment directly replies."),
+    ("Thread window", "THREAD_WINDOW",
+     "A small set of nearby comments from the same conversation. Use this "
+     "when the exact parent comment is unavailable or when several nearby "
+     "comments are needed to understand the exchange."),
+    ("Original post", "ORIGINAL_POST",
+     "The post, article caption, question, or topic that initiated the "
+     "conversation."),
+    ("Consultation prompt", "CONSULTATION_PROMPT",
+     "The official question, proposal, or policy description to which a "
+     "consultation response was submitted."),
+]
+
 
 def _clean_enum(value) -> str:
     if not value:
@@ -91,75 +104,6 @@ def _clean_enum(value) -> str:
         if sep in value:
             return value.split(sep)[0].strip()
     return value.strip()
-
-
-# ─────────────────────────────────────────
-# INTERVENTION TYPOLOGY (Web Appendix A) -- context only, not predictive
-# ─────────────────────────────────────────
-INTERVENTION_TYPES = {
-    "Fixed Intervention (Narrow scope, Highly prescriptive)": {
-        "scope": "Narrow", "prescriptiveness": "Highly",
-        "example": "Ban on single-use plastic bags (Gonzalez-Arcos et al. 2021)",
-        "note": (
-            "Predominantly initiated by governmental policies or laws with "
-            "clear targets and strong regulatory specification. Requires "
-            "consumers to change one or a few interconnected practices."
-        )
-    },
-    "Bounded Intervention (Broad scope, Highly prescriptive)": {
-        "scope": "Broad", "prescriptiveness": "Highly",
-        "example": "ZEV policies and strategies (Holtsmark and Skonhoft 2014)",
-        "note": (
-            "Highly prescriptive and predominantly initiated by governmental "
-            "targets, followed by incentives, penalties, and firm strategies "
-            "that move consumers and market actors across a wide range of "
-            "practices."
-        )
-    },
-    "Flexible Intervention (Narrow scope, Lowly prescriptive)": {
-        "scope": "Narrow", "prescriptiveness": "Lowly",
-        "example": "Meat-free Mondays (Semba et al. 2024)",
-        "note": (
-            "New behavioral guidelines for a specific consumption practice, "
-            "often arising from consumer movements or social marketers "
-            "rather than regulation."
-        )
-    },
-    "Open Intervention (Broad scope, Lowly prescriptive)": {
-        "scope": "Broad", "prescriptiveness": "Lowly",
-        "example": "Decentralized adoption of AI in healthcare (Poon et al. 2025)",
-        "note": (
-            "Arises primarily from technological or societal developments "
-            "rather than explicit policy goals; characterized by high "
-            "uncertainty, multiple possible trajectories, and no predefined "
-            "societal outcome. A SPECIFIC, dated mandate within this domain "
-            "(e.g., all primary-care patients must use AI-supported triage "
-            "by a stated date) may instead be a Bounded intervention -- "
-            "classification depends on the specific intervention, not the "
-            "domain."
-        )
-    },
-}
-
-
-def augment_prescribed_future(base_pf: str, it_key: str) -> str:
-    """Appends the selected intervention-type classification to the
-    prescribed future text so the model has this contextual information.
-    This context helps interpret the prescribed future; per the paper, it
-    does not predetermine which orientations, activities, or challenges
-    will be found in the data."""
-    base_pf = (base_pf or "").strip()
-    if not it_key or it_key not in INTERVENTION_TYPES:
-        return base_pf
-    it_data = INTERVENTION_TYPES[it_key]
-    type_name = it_key.split(" (")[0]
-    addition = (
-        f"[Intervention type (context only, not predictive): {type_name} -- "
-        f"{it_data['scope']} scope, {it_data['prescriptiveness']} prescriptive.]"
-    )
-    if addition in base_pf:
-        return base_pf
-    return f"{base_pf} {addition}".strip()
 
 
 # ─────────────────────────────────────────
@@ -186,7 +130,7 @@ You will always be given TWO separate fields:
      to interpret the focal comment. NEVER classify the context itself.
 
 ====================================================================
-A. SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (context only)
+A. SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (background context)
 ====================================================================
 
   FIXED (Narrow scope, Highly prescriptive)   -- e.g., ban on single-use plastic bags
@@ -194,9 +138,9 @@ A. SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (context only)
   FLEXIBLE (Narrow scope, Lowly prescriptive) -- e.g., Meat-free Mondays
   OPEN (Broad scope, Lowly prescriptive)      -- e.g., decentralized adoption of AI in healthcare
 
-This typology contextualizes the prescribed future. It does NOT
-predetermine which orientations, activities, or future-making challenges
-will be found in a given text.
+This typology contextualizes the prescribed future conceptually. It does
+NOT predetermine which orientations, activities, or future-making
+challenges will be found in a given text.
 
 ====================================================================
 B. FUTURE-MAKING ACTIVITIES
@@ -209,18 +153,44 @@ evaluate shapes how they negotiate, which in turn shapes what they enact.
 --- EVALUATION ---
 Consumers' cognitive assessment of the prescribed future -- how they make
 sense of it, including its meaning, likelihood, desirability, benefits,
-costs, risks, assumptions, and trade-offs.
+costs, risks, assumptions, and trade-offs. Evaluation is fundamentally
+about ASSESSING the prescribed future itself.
 
 --- NEGOTIATION ---
 The activity through which consumers attempt to shape collective
 trajectories toward a preferred future, in relation to other actors,
 claims, or possible futures -- comparing, contesting, defending, or
-expanding preferred futures.
+expanding preferred futures. Negotiation is fundamentally about
+ADVANCING or POSITIONING a preferred trajectory, whether in explicit
+relation to another actor's claim or through the comment's own content.
+
+  Distinguishing Evaluation from Negotiation: A comment whose primary work
+  is to ASSESS the prescribed future itself -- its meaning, likelihood,
+  desirability, benefits, costs, risks, or trade-offs -- is performing
+  Evaluation, even if it is strongly worded. A comment whose primary work
+  is to ASSERT, PROPOSE, or DESCRIBE a preferred future or trajectory --
+  without primarily assessing the merits, costs, or trade-offs of the
+  prescribed future itself -- is performing Negotiation, because it
+  advances a collective trajectory rather than assessing one. This holds
+  regardless of whether the comment contains an imperative, a direct
+  address, or any other grammatical marker. A comment can also perform
+  Negotiation by responding to, agreeing with, questioning, rejecting, or
+  contesting a specific claim or position raised in the available context,
+  even when phrased declaratively.
 
 --- ENACTMENT ---
 What consumers do in the present to materialize a preferred future,
 including reconfiguring routines, reallocating resources, acquiring
-materials, or refusing to change existing practices.
+materials, or refusing to change existing practices. When a comment's
+main point is a firm, first-person commitment to continue, delay,
+accelerate, or refuse a practice, Enactment is the comment's dominant
+work -- even when the comment also states a reason for that commitment.
+A stated reason functions as support for the commitment, not as a
+separate, self-standing assessment, unless the evaluative content is
+substantial enough to also stand on its own as a distinguishable body of
+assessment (in which case it may be captured as a secondary Evaluation
+classification, per Section F, when secondary classifications are
+permitted for this request).
 
 DO NOT USE GRAMMATICAL SHORTCUTS:
   - Negotiation does NOT require an imperative, command, or direct call to
@@ -232,21 +202,18 @@ DO NOT USE GRAMMATICAL SHORTCUTS:
   - A statement about an alternative future must be interpreted according
     to what it is doing within the complete comment and its available
     context -- whether it is primarily assessing the prescribed future
-    (Evaluation) or primarily positioning a preferred future relative to
-    it or to another actor/claim (Negotiation).
+    (Evaluation) or primarily advancing/positioning a preferred future
+    relative to it or to another actor/claim (Negotiation).
   - First-person behavior is evidence of Enactment, but it should not
-    automatically erase substantial Evaluation or Negotiation content
-    present in the same comment. Use a secondary classification when a
-    second activity is substantively and separably present.
+    automatically erase substantial, separately-standing Evaluation or
+    Negotiation content present in the same comment.
 
 Use the CONTEXT (when available) to judge whether the focal comment is
 responding to, agreeing with, defending, questioning, rejecting, or
 contesting a preferred future raised by the parent comment, nearby
 comments, the original post, or the consultation prompt. In the absence
-of context, judge Negotiation from what the complete focal comment itself
-is doing -- positioning a preferred future in relation to the prescribed
-future or to an implied alternative -- rather than from any single
-grammatical marker.
+of context, judge the activity from what the complete focal comment
+itself is doing, per the distinctions above.
 
 Sub-types of each activity, organized by orientation (see Section C for
 full orientation descriptions):
@@ -340,8 +307,8 @@ D. MANDATORY ORIENTATION x ACTIVITY PERFORMANCE MATRIX
   RESISTANT  -> AVOID (Evaluation)    | REJECT (Negotiation)   | PREVENT (Enactment)
   EXPANDER   -> COMPLEXIFY (Evaluation) | CONTEST (Negotiation) | REROUTE (Enactment)
 
-Every activity_subtype (primary and secondary) MUST belong to the row
-matching its own orientation. Verify this before responding.
+Every activity_subtype (main and secondary, when applicable) MUST belong
+to the row matching its own orientation. Verify this before responding.
 
 ====================================================================
 E. GROUNDING EXAMPLES (paraphrased from the manuscript's dataset)
@@ -351,17 +318,16 @@ Example (CATALYZER, Evaluation/Simplify) -- Whirlpool forum:
 "Once EVs are cheaper to buy than ICE cars the transition will happen
 fast because cost per unit for ICE will rise as sales fall... EVs can
 stand on their own merits now."
--> The comment narrows focus and treats the transition as already
-underway and unproblematic: EVALUATION / SIMPLIFY / CATALYZER.
+-> Assesses the prescribed future as already unproblematic: EVALUATION /
+SIMPLIFY / CATALYZER.
 
 Example (CATALYZER, Negotiation/Advocate) -- public consultation:
 "We are already so far behind! We need to sprint to catch up. We should
 be WORLD LEADERS in solar and battery manufacturing. Why are we not using
 our own minerals to make batteries for EVs on a global scale??"
--> The comment recruits others and calls for stronger policy signals,
-framing the prescribed future as a collective endeavor: NEGOTIATION /
-ADVOCATE / CATALYZER. Note: no context is required -- the comment's own
-content positions a preferred (faster) collective trajectory.
+-> Recruits others and calls for stronger policy signals, advancing a
+faster collective trajectory rather than assessing the prescribed future's
+merits: NEGOTIATION / ADVOCATE / CATALYZER.
 
 Example (CATALYZER, Enactment/Accelerate) -- Facebook group:
 "Toyota is still very much trying to slow down the transition to EVs...
@@ -369,22 +335,20 @@ We have ordered two Teslas that will be delivered hopefully this year. We
 are selling our Prado and it looks like we are going to sell our last
 Toyota car."
 -> Materializes the prescribed future through present consumption
-decisions (ordering EVs, divesting from ICE vehicles): ENACTMENT /
-ACCELERATE / CATALYZER.
+decisions: ENACTMENT / ACCELERATE / CATALYZER.
 
-Example (AMBIVALENT, Evaluation/Stall, WITH secondary
-Enactment/Delay) -- interview:
+Example (AMBIVALENT, Evaluation/Stall) -- interview (Clara):
 "Living in Outback Northwest Queensland there's no charging stations at
-the time... I did like the appeal of an electric vehicle... But just at
-the time I went and bought a fairly decent [petrol] car... If we went on
-a driving holiday, we would take our big car... So if we got an EV it
-would just be our daily run around."
--> The comment's primary work is careful, cautious consideration of
-material conditions (charging infrastructure): EVALUATION / STALL /
-AMBIVALENT (primary). It also contains a separable, substantive
-enactment -- having bought a petrol car and planning to keep the EV only
-for limited "daily run around" use: ENACTMENT / DELAY / AMBIVALENT
-(secondary).
+the time. I did like the appeal of an electric vehicle mainly because you
+don't have to put fuel in it, which is great. But just at the time I went
+and bought a fairly decent car for five and a half grand. If we went on
+a driving holiday, we would take our big car. So if we got an EV it would
+just be our daily run around."
+-> The comment's primary and dominant work is careful, cautious
+consideration of material conditions (charging infrastructure): EVALUATION
+/ STALL / AMBIVALENT. If secondary classifications are permitted for this
+request, the mention of having bought a car may be captured as a
+secondary ENACTMENT / DELAY / AMBIVALENT classification.
 
 Example (AMBIVALENT, Negotiation/Question) -- Facebook comment:
 "Have you thought about what they are gonna do with all the batteries
@@ -392,12 +356,12 @@ once they expire because they aren't recyclable?"
 -> Raises a question rather than an outright objection, seeking
 reassurance before committing: NEGOTIATION / QUESTION / AMBIVALENT.
 
-Example (AMBIVALENT, Enactment/Delay) -- Reddit:
-"I plan to drive my current 10 year old hybrid as long as I can. The next
-car I buy will probably be electric, but I'm expecting many of these
-issues to be resolved by then."
--> Continues current practice, waiting for conditions to mature before
-adopting: ENACTMENT / DELAY / AMBIVALENT.
+Example (AMBIVALENT, Enactment/Delay) -- simplified comment:
+"I'm sticking with my current hybrid for now instead of buying an EV.
+I'll probably get one eventually, but not yet."
+-> The comment's main point is a firm, present commitment to continue
+current practice, tied to an implied "for now": ENACTMENT / DELAY /
+AMBIVALENT.
 
 Example (RESISTANT, Evaluation/Avoid) -- Facebook comment:
 "Electric vehicles are not the solution... The current electricity
@@ -420,35 +384,36 @@ travel time charging the damn thing to go to hell."
 -> Entrenches current practice, explicitly refusing to adopt the
 prescribed future: ENACTMENT / PREVENT / RESISTANT.
 
-Example (EXPANDER, Evaluation/Complexify, WITH secondary
-Enactment/Reroute) -- interview:
+Example (EXPANDER, Evaluation/Complexify) -- interview (Peter):
 "The embodied carbon in a new vehicle... is more than the emissions that
 are going to be produced by the current vehicle over the course of its
 lifetime until it falls apart. So that's the plan: to extract maximum
-value out of that current vehicle until it is no longer functional...
-I am at the moment on a waiting list for a new electric cargo bike
-because my current electric cargo bike is about seven years old."
--> The comment's primary work is a critical, systemic examination of
-trade-offs (embodied carbon vs. lifetime emissions): EVALUATION /
-COMPLEXIFY / EXPANDER (primary). It also contains a separable, decisive
-practice already under way -- driving the current vehicle into the
-ground and being on a waiting list for a cargo bike: ENACTMENT / REROUTE
-/ EXPANDER (secondary).
+value out of that current vehicle until it is no longer functional... I
+am at the moment on a waiting list for a new electric cargo bike."
+-> The comment's primary work is a critical, systemic assessment of
+trade-offs: EVALUATION / COMPLEXIFY / EXPANDER. If secondary
+classifications are permitted for this request, the separable, decisive
+practice already under way may be captured as a secondary ENACTMENT /
+REROUTE / EXPANDER classification.
 
-Example (EXPANDER, Negotiation/Contest, DECLARATIVE, no imperative) --
-Facebook comment:
+Example (EXPANDER, Negotiation/Contest, DECLARATIVE, no imperative,
+no assessment of the prescribed future's own merits) -- Facebook
+comment (Dan):
 "The future is less cars, in higher density pedestrian/bike and train
 orientated urban environments, where cars are a secondary transport
 really only for those who really need it."
--> Contests the scope of the prescribed future and seeks to broaden it
-through a long-term alternative vision, without using any imperative or
-direct address: NEGOTIATION / CONTEST / EXPANDER. This illustrates that
-Negotiation can be entirely declarative.
+-> This comment does NOT assess the meaning, likelihood, desirability,
+costs, or trade-offs of the prescribed future at all. Its entire content
+ASSERTS a different, broader preferred future. Per the Evaluation/
+Negotiation distinction in Section B, this is NEGOTIATION -- it contests
+the scope of the prescribed future and seeks to broaden it: NEGOTIATION /
+CONTEST / EXPANDER. This holds even though the comment uses no imperative
+and addresses no one directly.
 
-Example (EXPANDER, Enactment/Reroute) -- public consultation:
+Example (EXPANDER, Enactment/Reroute) -- public consultation (Phillip):
 "I uprooted my life and moved from the Sunshine Coast to Melbourne with
-some of my strongest reasoning being the ability to use public
-transport, ride a bike around and use a car as little as possible."
+some of my strongest reasoning being the ability to use public transport,
+ride a bike around and use a car as little as possible."
 -> Directs present practice away from the prescribed future and toward a
 different, broader preferred future: ENACTMENT / REROUTE / EXPANDER.
 
@@ -457,15 +422,16 @@ F. PRIMARY AND SECONDARY CLASSIFICATIONS
 ====================================================================
 
 Return ONE dominant classification (main_activity, activity_subtype,
-main_orientation) for application comparability. This is an
-application-level simplification, not a claim that future-making
-activities or orientations are mutually exclusive.
+main_orientation) for application comparability.
 
-Additionally, return UP TO TWO secondary classifications when the comment
-substantively and separably performs a second activity, or when a second,
-clearly distinguishable orientation-specific performance is present (see
-grounding examples above). Do not manufacture secondary classifications
-from marginal or fragmentary content.
+The calling application will indicate, for each request, whether
+secondary classifications are permitted. When permitted, return UP TO TWO
+secondary classifications when the comment substantively and separably
+performs a second activity, or when a second, clearly distinguishable
+orientation-specific performance is present. Do not manufacture secondary
+classifications from marginal or fragmentary content. When secondary
+classifications are NOT permitted for a request, always return an empty
+list for secondary_classifications.
 
 ====================================================================
 G. WHAT NOT TO DO
@@ -482,7 +448,7 @@ comments, never by you for a single comment.
 
 Do NOT generate policy or managerial recommendations, instruments, or
 evidence requirements. These are provided by the calling application as
-static, hard-coded content from the paper and its Web Appendices.
+fixed reference content.
 
 ====================================================================
 OUTPUT FORMAT -- Return ONLY valid JSON
@@ -493,7 +459,7 @@ OUTPUT FORMAT -- Return ONLY valid JSON
 
   "main_activity": "EVALUATION, NEGOTIATION, or ENACTMENT",
   "activity_subtype": "SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
-  "activity_rationale": "Which activity definition (Section B) applied and why, citing specific phrases",
+  "activity_rationale": "Which activity definition (Section B) applied and why, citing specific phrases; if the comment contains both evaluative and practical content, explicitly state which is the comment's dominant work and why",
 
   "main_orientation": "CATALYZER, AMBIVALENT, RESISTANT, or EXPANDER",
   "orientation_rationale": "The configuration of narrative, goal, emotion, temporality, and practice implications (Section C) that supports this orientation",
@@ -523,7 +489,6 @@ ORIENTATIONS = {
         "narrative": "Urgency Narrative",
         "temporality": "The future is close -- change is happening now",
         "activities": "Simplify - Advocate - Accelerate",
-        "notable_conditions": "High degree of alignment between current practices and prescribed future"
     },
     "AMBIVALENT": {
         "color": "#D68910", "bg": "#FEFDE7", "border": "#F4D03F",
@@ -531,7 +496,6 @@ ORIENTATIONS = {
         "narrative": "Pragmatic Narrative",
         "temporality": "The future is contingent -- change is uncertain",
         "activities": "Stall - Question - Delay",
-        "notable_conditions": "Limited resources to support change in current practices"
     },
     "RESISTANT": {
         "color": "#C0392B", "bg": "#FDEDEC", "border": "#E74C3C",
@@ -539,7 +503,6 @@ ORIENTATIONS = {
         "narrative": "Control Narrative",
         "temporality": "The future is distant -- there will be no change",
         "activities": "Avoid - Reject - Prevent",
-        "notable_conditions": "Low degree of alignment between current practices and prescribed future"
     },
     "EXPANDER": {
         "color": "#7D3C98", "bg": "#F4ECF7", "border": "#9B59B6",
@@ -547,7 +510,6 @@ ORIENTATIONS = {
         "narrative": "Bigger Picture Narrative",
         "temporality": "The future is distant -- change will be broader",
         "activities": "Complexify - Contest - Reroute",
-        "notable_conditions": "Mismatch among current practices, normative practices, and the prescribed future"
     }
 }
 
@@ -563,7 +525,6 @@ ACTIVITY_META = {
         "subtypes": {"ACCELERATE": "CATALYZER", "DELAY": "AMBIVALENT", "PREVENT": "RESISTANT", "REROUTE": "EXPANDER"}},
 }
 
-# Future-making challenges (paper's exact terms) -- corpus-level only
 CHALLENGE_DEFINITIONS = {
     "CONVOLUTED_EVALUATIONS": {
         "label": "Convoluted Evaluations", "activity": "EVALUATION",
@@ -593,6 +554,8 @@ FRAGILE_FUTURES_DEFINITION = (
     "that may interfere with the actualization of the prescribed one."
 )
 
+# Internal-only constants, used solely for hidden benchmark examples in
+# Advanced / Developer Tools -- never shown as presets in the normal flow.
 PF_EV = (
     "Transition all vehicles to Zero Emission Vehicles (EVs) to achieve Australia's "
     "net-zero emissions targets, as prescribed by Australia's National Electric "
@@ -602,11 +565,6 @@ PF_NVES = (
     "Implement a national New Vehicle Efficiency Standard (NVES) in Australia to "
     "reduce transport emissions, as consulted on by the Australian Government's "
     "Department of Climate Change, Energy, the Environment and Water"
-)
-PF_AI_HEALTH = (
-    "Transition all patients who enter primary care to AI-supported triage by 2030 "
-    "(a specific, dated mandate -- illustrative of a Bounded intervention in the "
-    "AI-integrated healthcare context)"
 )
 
 # ─────────────────────────────────────────
@@ -650,38 +608,30 @@ MANAGER_ROADMAP_STEPS = [
      "Place support at touchpoints where practices change."),
 ]
 
-# Static, hard-coded reference content from Web Appendix E (never generated
-# by the LLM; shown only as static reference material, not as
-# analysis-specific recommendations).
-WEB_APPENDIX_E_POLICY_REFERENCE = {
+# Fixed reference content (never generated by the LLM).
+POLICY_ORIENTATION_REFERENCE = {
     "CATALYZER": "Time-limited sandboxes, independent evaluation, mandatory failure reporting, predefined thresholds for expansion/withdrawal.",
     "AMBIVALENT": "Impact assessments, staged authorization, sunset clauses, public registers, guaranteed alternative pathways.",
     "RESISTANT": "Protect human-review and appeal rights, prohibit unacceptable uses, independent audits, moratoria where evidence is insufficient.",
     "EXPANDER": "Deliberative forums, broader impact assessment, fund complementary pathways, citizen assemblies, data trusts, alternative governance models.",
 }
-WEB_APPENDIX_E_MANAGER_REFERENCE = {
+MANAGER_ORIENTATION_REFERENCE = {
     "CATALYZER": "Governed pilots, peer learning, documentation, limitation reporting. Avoid inevitability claims and treating early adopters as representative.",
     "AMBIVALENT": "Comparison tools, staged adoption, transparent evidence, training, human assistance. Avoid artificial urgency and framing hesitation as ignorance.",
     "RESISTANT": "Consultation, opt-outs, human review, audits, appeals, harm protections. Avoid 'there is no alternative' messaging, ridicule, hidden automation.",
     "EXPANDER": "Participatory design, futures workshops, broader-impact evaluation, partnerships, alternative governance/service models. Avoid presenting the offering as complete or dismissing critique.",
 }
 CROSS_ORIENTATION_NOTE = (
-    "Cross-orientation interference check (paper's managerial roadmap, Step 4): "
-    "check whether a response tailored to one orientation intensifies fragility "
-    "elsewhere."
+    "Cross-orientation interference check: check whether a response "
+    "tailored to one orientation intensifies fragility elsewhere."
 )
 
 # ─────────────────────────────────────────
-# BENCHMARK EXAMPLES -- paraphrased directly from the manuscript's dataset,
-# used only for the internal Coding Consistency Check.
+# BENCHMARK EXAMPLES -- hidden from normal workflows; used only inside
+# Advanced / Developer Tools for the Coding Consistency Check.
 # ─────────────────────────────────────────
 EXAMPLES = {
-    "Select an example": {
-        "prescribed": "", "comment": "", "context": "", "context_type": "NONE",
-        "is_consultation": False, "activity": "", "subtype": "", "orientation": "",
-        "secondary_expected": None
-    },
-    "CATALYZER | Evaluation -> Simplify (Alfonso, W)": {
+    "CATALYZER | Evaluation -> Simplify": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "SIMPLIFY", "orientation": "CATALYZER",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": (
@@ -690,7 +640,7 @@ EXAMPLES = {
             "stand on their own merits now."
         )
     },
-    "CATALYZER | Negotiation -> Advocate (Joe, PC)": {
+    "CATALYZER | Negotiation -> Advocate": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "ADVOCATE", "orientation": "CATALYZER",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": (
@@ -700,7 +650,7 @@ EXAMPLES = {
             "scale??"
         )
     },
-    "CATALYZER | Enactment -> Accelerate (Johnny, F)": {
+    "CATALYZER | Enactment -> Accelerate": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "ACCELERATE", "orientation": "CATALYZER",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": (
@@ -710,7 +660,7 @@ EXAMPLES = {
             "sell our last Toyota car."
         )
     },
-    "AMBIVALENT | Evaluation -> Stall, + secondary Enactment/Delay (Clara, I)": {
+    "AMBIVALENT | Evaluation -> Stall, + secondary Enactment/Delay": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "STALL", "orientation": "AMBIVALENT",
         "context": "", "context_type": "NONE", "is_consultation": False,
         "secondary_expected": ("AMBIVALENT", "ENACTMENT", "DELAY"),
@@ -723,7 +673,7 @@ EXAMPLES = {
             "car. So if we got an EV it would just be our daily run around."
         )
     },
-    "AMBIVALENT | Negotiation -> Question (Martin, F)": {
+    "AMBIVALENT | Negotiation -> Question": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "QUESTION", "orientation": "AMBIVALENT",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": (
@@ -731,16 +681,15 @@ EXAMPLES = {
             "batteries once they expire because they aren't recyclable?"
         )
     },
-    "AMBIVALENT | Enactment -> Delay (Ruen, R)": {
+    "AMBIVALENT | Enactment -> Delay": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "DELAY", "orientation": "AMBIVALENT",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": (
-            "I plan to drive my current 10 year old hybrid as long as I can. The "
-            "next car I buy will probably be electric, but I'm expecting many of "
-            "these issues to be resolved by then."
+            "I'm sticking with my current hybrid for now instead of buying an "
+            "EV. I'll probably get one eventually, but not yet."
         )
     },
-    "RESISTANT | Evaluation -> Avoid (Esther, F)": {
+    "RESISTANT | Evaluation -> Avoid": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "AVOID", "orientation": "RESISTANT",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": (
@@ -750,17 +699,17 @@ EXAMPLES = {
             "result in expensive car prices."
         )
     },
-    "RESISTANT | Negotiation -> Reject (Raj, YT)": {
+    "RESISTANT | Negotiation -> Reject": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "REJECT", "orientation": "RESISTANT",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": "We don't need politicians and their cronies telling us what sort of car we can have."
     },
-    "RESISTANT | Enactment -> Prevent (StarT, NM)": {
+    "RESISTANT | Enactment -> Prevent": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "PREVENT", "orientation": "RESISTANT",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": "I for one WILL NOT be forced into an elec vehicle and spend half my travel time charging the damn thing to go to hell."
     },
-    "EXPANDER | Evaluation -> Complexify, + secondary Enactment/Reroute (Peter, I)": {
+    "EXPANDER | Evaluation -> Complexify, + secondary Enactment/Reroute": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "COMPLEXIFY", "orientation": "EXPANDER",
         "context": "", "context_type": "NONE", "is_consultation": False,
         "secondary_expected": ("EXPANDER", "ENACTMENT", "REROUTE"),
@@ -774,7 +723,7 @@ EXAMPLES = {
             "about seven years old."
         )
     },
-    "EXPANDER | Negotiation -> Contest, declarative, no imperative (Dan, F)": {
+    "EXPANDER | Negotiation -> Contest, declarative, no imperative": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "CONTEST", "orientation": "EXPANDER",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": (
@@ -783,7 +732,7 @@ EXAMPLES = {
             "transport really only for those who really need it."
         )
     },
-    "EXPANDER | Enactment -> Reroute (Phillip, PC)": {
+    "EXPANDER | Enactment -> Reroute": {
         "prescribed": PF_EV, "activity": "ENACTMENT", "subtype": "REROUTE", "orientation": "EXPANDER",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": (
@@ -797,7 +746,7 @@ EXAMPLES = {
 
 # ─────────────────────────────────────────
 # CONSISTENCY SAFEGUARD -- enforce the mandatory orientation x subtype
-# pairing table for primary and secondary classifications
+# pairing table for main and secondary classifications
 # ─────────────────────────────────────────
 
 def get_secondary_classifications(result: dict) -> list:
@@ -856,10 +805,6 @@ def enforce_consistency(result: dict) -> dict:
 
 
 def enforce_context_metadata(result: dict, context_available: bool, context_type: str) -> dict:
-    """context_used and context_type are determined deterministically by
-    the calling application (based on what context text was actually
-    supplied), not trusted from the model, to avoid inconsistent
-    self-reporting."""
     result["context_used"] = bool(context_available)
     result["context_type"] = context_type if context_type in VALID_CONTEXT_TYPES else "NONE"
     if not context_available:
@@ -873,7 +818,7 @@ def enforce_context_metadata(result: dict, context_available: bool, context_type
 
 def analyze_comment(prescribed_future: str, focal_text: str, context_text: str = "",
                      context_type: str = "NONE", is_consultation: bool = False,
-                     api_key: str = None) -> dict:
+                     api_key: str = None, allow_secondary_classifications: bool = True) -> dict:
     client = openai.OpenAI(api_key=api_key)
 
     if is_consultation:
@@ -886,6 +831,14 @@ def analyze_comment(prescribed_future: str, focal_text: str, context_text: str =
     context_available = bool(context_text and context_text.strip())
     context_block = context_text.strip() if context_available else "No context is available for this comment."
 
+    secondary_instruction = (
+        "You MAY return up to two secondary classifications if substantively "
+        "supported, per Section F."
+        if allow_secondary_classifications else
+        "Do NOT return any secondary classifications for this request. "
+        "secondary_classifications must be an empty list."
+    )
+
     user_message = f"""
 PRESCRIBED FUTURE:
 {prescribed_future}
@@ -896,12 +849,17 @@ PRESCRIBED FUTURE:
 {context_label}:
 {context_block}
 
+SECONDARY CLASSIFICATIONS FOR THIS REQUEST: {secondary_instruction}
+
 Classify ONLY the focal comment/response above, using the definitions in
-Sections B-D. Apply no grammatical shortcuts. Verify every
-activity_subtype (primary and secondary) belongs to the valid pairing row
-for its own orientation (Section D) before responding. Do not produce any
-future-making challenge or Fragile Futures assessment, and do not produce
-any policy or managerial recommendation -- these are outside your task.
+Sections B-D. Apply no grammatical shortcuts. When the comment contains
+both evaluative and practical content, decide dominance according to
+Section B's guidance and explain that decision explicitly in
+activity_rationale. Verify the activity_subtype belongs to the valid
+pairing row for its own orientation (Section D) before responding. Do not
+produce any future-making challenge or Fragile Futures assessment, and do
+not produce any policy or managerial recommendation -- these are outside
+your task.
 """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -914,6 +872,8 @@ any policy or managerial recommendation -- these are outside your task.
     )
     parsed = json.loads(response.choices[0].message.content)
     parsed = enforce_consistency(parsed)
+    if not allow_secondary_classifications:
+        parsed["secondary_classifications"] = []
     parsed = enforce_context_metadata(parsed, context_available, context_type)
     return parsed
 
@@ -925,12 +885,11 @@ def run_consistency_suite(api_key: str) -> dict:
     validation, intercoder reliability, or evidence of generalizability."""
     results = []
     for name, ex in EXAMPLES.items():
-        if not ex.get("comment"):
-            continue
         try:
             pred = analyze_comment(
                 ex["prescribed"], ex["comment"], ex.get("context", ""),
-                ex.get("context_type", "NONE"), ex.get("is_consultation", False), api_key
+                ex.get("context_type", "NONE"), ex.get("is_consultation", False),
+                api_key, allow_secondary_classifications=True
             )
         except Exception as e:
             results.append({
@@ -970,6 +929,11 @@ def run_consistency_suite(api_key: str) -> dict:
 # ─────────────────────────────────────────
 # COMMENT / THREAD DATA STRUCTURES (technical infrastructure, no theory)
 # ─────────────────────────────────────────
+
+def has_comment_text_column(df: pd.DataFrame) -> bool:
+    cols = {c.lower().strip() for c in df.columns}
+    return bool(cols & {"comment_text", "text", "comment"})
+
 
 def build_comment_records_from_paragraphs(text: str, separator: str = None) -> list:
     text = (text or "").strip()
@@ -1060,10 +1024,6 @@ def index_threads(records: list):
 
 def build_context(record: dict, by_id: dict, thread_order: dict,
                    consultation_prompt: str = None, is_consultation: bool = False):
-    """Builds context in priority order: (1) parent comment, (2) up to two
-    preceding comments from the same thread, (3) one following reply that
-    directly responds to the focal comment, (4) the original post or
-    consultation prompt. Never uses comments from unrelated threads."""
     parts = []
     context_type = "NONE"
     focal_id = record["comment_id"]
@@ -1145,7 +1105,8 @@ def analyze_document(prepared_records: list, prescribed_future: str, api_key: st
         future_to_pos = {
             executor.submit(
                 analyze_comment, prescribed_future, rec["comment_text"], rec["context_text"],
-                rec["context_type"], rec["is_consultation"], api_key
+                rec["context_type"], rec["is_consultation"], api_key,
+                True  # allow_secondary_classifications -- permitted for corpus mapping
             ): pos
             for pos, rec in enumerate(prepared_records)
         }
@@ -1196,12 +1157,6 @@ def compute_dominant_distributions(results: list) -> dict:
 
 
 def compute_challenge_review_candidates(results: list) -> dict:
-    """Identifies linked parent-reply comments performing DIFFERENT
-    orientation-specific performances of the SAME activity. These are
-    flagged as comments requiring interpretive review for the
-    corresponding future-making challenge -- never auto-diagnosed as an
-    occurred challenge, never scored, never converted into a percentage or
-    a Fragile Futures assessment."""
     valid = [r for r in results if r and "_error" not in r]
     by_id = {r.get("_comment_id"): r for r in valid if r.get("_comment_id")}
     candidates = {k: [] for k in CHALLENGE_DEFINITIONS}
@@ -1219,7 +1174,7 @@ def compute_challenge_review_candidates(results: list) -> dict:
         sub_r = _clean_enum(r.get("activity_subtype", "")).upper()
         sub_p = _clean_enum(parent.get("activity_subtype", "")).upper()
         if ori_r == ori_p and sub_r == sub_p:
-            continue  # same performance -- not a candidate for review
+            continue
         challenge_key = next((k for k, v in CHALLENGE_DEFINITIONS.items() if v["activity"] == act_r), None)
         if challenge_key:
             candidates[challenge_key].append({"parent": parent, "reply": r})
@@ -1227,9 +1182,6 @@ def compute_challenge_review_candidates(results: list) -> dict:
 
 
 def build_linked_pair_table(results: list) -> pd.DataFrame:
-    """Purely descriptive table of linked parent-reply comments and their
-    classifications -- no interaction type or theoretical-contrast label
-    is attached."""
     valid = [r for r in results if r and "_error" not in r]
     by_id = {r.get("_comment_id"): r for r in valid if r.get("_comment_id")}
     rows = []
@@ -1334,8 +1286,8 @@ def show_document_summary(results: list, prescribed_future: str,
     """, unsafe_allow_html=True)
 
     if sampling_description:
-        st.caption(f"**Sampling:** {sampling_description}")
-    st.info(INTERPRETIVE_USE_NOTE)
+        st.caption(f"Sampling: {sampling_description}")
+    st.caption(INTERPRETIVE_USE_NOTE)
     if n_errors:
         st.warning(f"{n_errors} comment(s) failed to analyze and were excluded.")
 
@@ -1419,7 +1371,7 @@ def show_document_summary(results: list, prescribed_future: str,
             "fictitious exchanges have been reconstructed."
         )
 
-    st.caption(f"*{FRAGILE_FUTURES_DEFINITION}*")
+    st.caption(FRAGILE_FUTURES_DEFINITION)
 
     st.markdown("---")
     st.markdown("### Comment-Level Detail")
@@ -1444,7 +1396,7 @@ def show_document_summary(results: list, prescribed_future: str,
         chosen_idx, chosen_result = valid_indexed[chosen_pos]
         st.markdown("**Full focal comment text:**")
         st.info(chosen_result.get("_comment_text", ""))
-        show_results(chosen_result, prescribed_future, show_interpretive_note=False, corpus_mode=True)
+        show_results(chosen_result, prescribed_future, show_interpretive_note=False, allow_secondary_display=True)
     else:
         st.caption("No valid comments available to explore.")
 
@@ -1453,70 +1405,50 @@ def show_document_summary(results: list, prescribed_future: str,
 
 
 # ─────────────────────────────────────────
-# UI HELPER FUNCTIONS -- single comment
+# UI HELPER FUNCTIONS
 # ─────────────────────────────────────────
 
-def show_example_badge(ex_data: dict):
-    if not ex_data.get("activity"):
-        return
-    ori, act, sub = ex_data.get("orientation", ""), ex_data.get("activity", ""), ex_data.get("subtype", "")
-    cfg, ameta = ORIENTATIONS.get(ori, {}), ACTIVITY_META.get(act, {})
-    if not cfg or not ameta:
-        return
-    st.markdown(f"""
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-        <span style="background:{cfg['bg']};border:2px solid {cfg['border']};color:{cfg['color']};border-radius:20px;padding:4px 14px;font-weight:bold;font-size:13px;">{ori}</span>
-        <span style="font-size:16px;color:#aaa;">-></span>
-        <span style="background:{ameta['bg']};border:2px solid {ameta['color']};color:{ameta['color']};border-radius:20px;padding:4px 14px;font-weight:bold;font-size:13px;">{act}</span>
-        <span style="font-size:16px;color:#aaa;">-></span>
-        <span style="background:#f0f0f0;border:2px solid #bbb;color:#444;border-radius:20px;padding:4px 14px;font-weight:bold;font-size:13px;">{sub}</span>
-    </div>
-    """, unsafe_allow_html=True)
-
-
 def render_static_roadmaps(mode: str = "single"):
-    st.markdown("## Roadmap Reference (static, from the paper)")
+    st.markdown("## Roadmap Reference")
     if mode == "single":
         st.caption(
             "This application, for a single comment, primarily supports "
-            "mapping future-making orientations and activities (roadmap "
-            "step 1-2 for both policymakers and managerial practitioners). "
-            "It does not generate later-step actions from one comment."
+            "mapping future-making orientations and activities. It does not "
+            "generate later-step actions from one comment."
         )
     else:
         st.caption(
             "This application supports mapping orientations and organizing "
-            "comments for human review of possible future-making challenges "
-            "(roadmap steps 1-3). It does not claim to complete the later "
-            "roadmap steps."
+            "comments for human review of possible future-making challenges. "
+            "It does not claim to complete the later roadmap steps."
         )
     policy_tab, manager_tab = st.tabs(["Policymaking Roadmap", "Managerial Roadmap"])
     with policy_tab:
         for num, title, desc in POLICY_ROADMAP_STEPS:
             st.markdown(f"**Step {num}: {title}**")
             st.caption(desc)
-        with st.expander("Web Appendix E reference -- orientation-sensitive support directions (static, not generated for this analysis)"):
-            for ori, text in WEB_APPENDIX_E_POLICY_REFERENCE.items():
+        with st.expander("Orientation-sensitive reference material (not generated by the analysis)"):
+            for ori, text in POLICY_ORIENTATION_REFERENCE.items():
                 st.markdown(f"**{ori}:** {text}")
     with manager_tab:
         for num, title, desc in MANAGER_ROADMAP_STEPS:
             st.markdown(f"**Step {num}: {title}**")
             st.caption(desc)
-        with st.expander("Web Appendix E reference -- orientation-sensitive support directions (static, not generated for this analysis)"):
-            for ori, text in WEB_APPENDIX_E_MANAGER_REFERENCE.items():
+        with st.expander("Orientation-sensitive reference material (not generated by the analysis)"):
+            for ori, text in MANAGER_ORIENTATION_REFERENCE.items():
                 st.markdown(f"**{ori}:** {text}")
         st.caption(CROSS_ORIENTATION_NOTE)
 
 
 def show_results(result: dict, prescribed_future: str, show_interpretive_note: bool = True,
-                  corpus_mode: bool = False):
+                  allow_secondary_display: bool = False):
     orientation = _clean_enum(result.get("main_orientation", "")).upper().strip()
     main_act    = _clean_enum(result.get("main_activity", "")).upper().strip()
     act_sub     = _clean_enum(result.get("activity_subtype", "N/A")).upper().strip()
-    secondary = get_secondary_classifications(result)
+    secondary = get_secondary_classifications(result) if allow_secondary_display else []
 
     if show_interpretive_note:
-        st.info(INTERPRETIVE_USE_NOTE)
+        st.caption(INTERPRETIVE_USE_NOTE)
 
     st.markdown(f"""
     <div style="background:#EBF5FB;border-left:5px solid #2980B9;border-radius:8px;padding:12px 18px;margin-bottom:16px;">
@@ -1534,11 +1466,11 @@ def show_results(result: dict, prescribed_future: str, show_interpretive_note: b
     ctx_type = result.get("context_type", "NONE")
     ctx_used = result.get("context_used", False)
     st.caption(
-        f"**Technical note -- context used for interpretation:** {ctx_type}"
+        f"Technical note -- context used for interpretation: {ctx_type}"
         + (" (no context was available for this comment)" if not ctx_used else "")
     )
     if result.get("context_note"):
-        st.caption(f"**Context note:** {result.get('context_note')}")
+        st.caption(f"Context note: {result.get('context_note')}")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -1549,7 +1481,7 @@ def show_results(result: dict, prescribed_future: str, show_interpretive_note: b
             <p style="color:#777;margin:6px 0 2px;font-size:11px;">{cfg.get('narrative','')}</p>
             <p style="color:#777;margin:2px 0;font-size:11px;">{cfg.get('temporality','')}</p>
             <p style="color:#777;margin:2px 0;font-size:11px;">{cfg.get('goal','')}</p>
-            <p style="color:#999;margin:6px 0 0;font-size:10px;">Dominant orientation (application-level simplification)</p>
+            <p style="color:#999;margin:6px 0 0;font-size:10px;">Dominant orientation</p>
         </div>
         """, unsafe_allow_html=True)
     with col2:
@@ -1563,7 +1495,7 @@ def show_results(result: dict, prescribed_future: str, show_interpretive_note: b
         </div>
         """, unsafe_allow_html=True)
 
-    if secondary:
+    if allow_secondary_display and secondary:
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("#### Secondary Classification(s)")
         st.caption(
@@ -1607,46 +1539,11 @@ def show_results(result: dict, prescribed_future: str, show_interpretive_note: b
             </div>
             """, unsafe_allow_html=True)
 
-    if not corpus_mode:
+    if not allow_secondary_display:
         st.markdown("---")
         render_static_roadmaps(mode="single")
         st.markdown("---")
-        st.caption(f"\"{PAPER_TITLE}\" | Read the paper: {PAPER_URL}")
-
-
-# ─────────────────────────────────────────
-# BREADCRUMB / INTERVENTION TYPE / MODE SELECTOR
-# ─────────────────────────────────────────
-
-def render_breadcrumb(*items, current=None):
-    if current is None:
-        current = len(items) - 1
-    parts = [f"<strong style='color:#2980B9;'>{label}</strong>" if i == current else f"<span style='color:#999;'>{label}</span>"
-              for i, label in enumerate(items)]
-    st.markdown("<div style='font-size:13px;margin:2px 0 14px 0;'>" + " &nbsp;&rsaquo;&nbsp; ".join(parts) + "</div>", unsafe_allow_html=True)
-
-
-def render_intervention_type_selector(key_suffix: str):
-    st.markdown("**Intervention type**")
-    st.caption(
-        "Describes the scope of intended change and how prescriptive the "
-        "intervention is (Web Appendix A). This context helps interpret "
-        "the prescribed future; it does not predetermine which "
-        "orientations, activities, or future-making challenges will "
-        "appear in the data."
-    )
-    it_key = st.selectbox(
-        "Choose the intervention type:", options=list(INTERVENTION_TYPES.keys()),
-        index=None, placeholder="No intervention type selected -- click to choose (optional)",
-        key=f"it_{key_suffix}"
-    )
-    if it_key is None:
-        st.warning("No intervention type selected. The analysis will proceed without this contextual information.")
-    else:
-        it_data = INTERVENTION_TYPES[it_key]
-        st.caption(f"**Example:** {it_data['example']}")
-        st.caption(it_data["note"])
-    return it_key
+        st.caption(f'"{PAPER_TITLE}" | Read the paper: {PAPER_URL}')
 
 
 def render_mode_selector():
@@ -1682,7 +1579,7 @@ def render_mode_selector():
     pending_mode = st.session_state["pending_mode"]
     if pending_mode and pending_mode != active_mode:
         pending_label = MODE_SINGLE_LABEL if pending_mode == MODE_SINGLE else MODE_DOC_LABEL
-        st.warning(f"Switch to **'{pending_label}'**? Any unsaved input in the current mode may be lost.")
+        st.warning(f"Switch to '{pending_label}'? Any unsaved input in the current mode may be lost.")
         c1, c2 = st.columns(2)
         with c1:
             if st.button("Proceed", type="primary", key="confirm_switch_btn", use_container_width=True):
@@ -1710,8 +1607,7 @@ def render_mode_selector():
 # ─────────────────────────────────────────
 
 def main():
-    st.title("Future-Making Analyzer")
-    render_breadcrumb("Home")
+    st.title("Consumer Future-Making Analyzer")
     st.markdown(HOMEPAGE_DESCRIPTION)
     st.divider()
 
@@ -1723,87 +1619,65 @@ def main():
             api_key = st.text_input("OpenAI API Key", type="password", placeholder="sk-...")
 
     st.markdown("---")
-    st.markdown("### What would you like to do?")
+    st.markdown("## Step 1 -- Choose the Analysis Mode")
     mode = render_mode_selector()
 
     # ═══════════════════════════════════════
     # MODE 1: SINGLE COMMENT
     # ═══════════════════════════════════════
     if mode == MODE_SINGLE:
-        render_breadcrumb("Home", MODE_SINGLE_LABEL, "Step 1: Prescribed Future")
-        st.markdown("### Step 1 -- Define the Prescribed Future")
-        it_key_single = render_intervention_type_selector("single")
+        st.markdown("---")
+        st.markdown("## Step 2 -- Define the Prescribed Future and Enter the Focal Comment")
 
-        pf_default = st.session_state.pop("pf_prefill", "")
-        prescribed_future = st.text_area("prescribed_future", value=pf_default, height=85, label_visibility="collapsed",
-            placeholder="e.g., 'Transition all vehicles to Zero Emission Vehicles (EVs)...'")
-
-        render_breadcrumb("Home", MODE_SINGLE_LABEL, "Step 2: Focal Comment")
-        st.markdown("### Step 2 -- Enter the Focal Comment")
-        st.caption(
-            "Suitable inputs include consumer, citizen, patient, consultation, "
-            "forum, interview, and market-actor discourse. Institutional and "
-            "policy documents should be used to define the prescribed future "
-            "above, not classified as consumer orientations."
+        prescribed_future = st.text_area(
+            "Prescribed future",
+            placeholder="Describe the specific policy or market intervention and the future it prescribes.",
+            height=85
         )
-        st.info(INTERPRETIVE_USE_NOTE)
 
-        example_names = list(EXAMPLES.keys())
-        selected_ex = st.selectbox("Or try a built-in benchmark example (paraphrased from the manuscript):", example_names)
-        ex_data = EXAMPLES.get(selected_ex, EXAMPLES["Select an example"])
-        if selected_ex != "Select an example":
-            show_example_badge(ex_data)
-            suggested_pf = ex_data.get("prescribed", "")
-            if suggested_pf:
-                st.info(f"Suggested prescribed future: {suggested_pf[:130]}...")
-                if st.button("Use this as my prescribed future", type="secondary"):
-                    st.session_state["pf_prefill"] = suggested_pf
-                    st.rerun()
-
+        st.markdown("**Focal comment**")
         input_method = st.radio("Input method:", ["Type or paste text", "Upload a .txt file"], horizontal=True)
         focal_text = ""
         if input_method == "Type or paste text":
-            focal_text = st.text_area("Focal comment:", value=ex_data.get("comment", ""), height=180,
-                placeholder="Paste or type the focal comment/response here...", label_visibility="collapsed")
+            focal_text = st.text_area(
+                "Focal comment", placeholder="Paste or type the consumer comment, response, or post to classify.",
+                height=180, label_visibility="collapsed"
+            )
         else:
             uploaded_file = st.file_uploader("Upload .txt file:", type=["txt"])
             if uploaded_file:
                 focal_text = uploaded_file.read().decode("utf-8")
                 st.success(f"Uploaded: {len(focal_text):,} characters")
 
-        st.markdown("#### Context (optional)")
-        st.caption(
-            "Provide a parent comment, nearby comments, an original post, or "
-            "a consultation prompt if available. Context may help determine "
-            "whether the focal comment is responding to, defending, "
-            "questioning, rejecting, or contesting a preferred future."
+        st.markdown("---")
+        st.markdown("## Step 3 -- Enter Interpretive Context")
+        st.write(
+            "Context is optional but can help interpret what the focal comment "
+            "is responding to. The application classifies only the focal "
+            "comment; contextual text is used only to interpret it."
         )
-        is_consultation = st.checkbox(
-            "This is a public-consultation / policy response (use CONSULTATION_PROMPT context label)",
-            value=ex_data.get("is_consultation", False)
-        )
-        context_type_options = ["NONE", "PARENT_REPLY", "THREAD_WINDOW", "ORIGINAL_POST", "CONSULTATION_PROMPT"]
-        default_ctx_type = ex_data.get("context_type", "NONE")
-        context_type_selected = st.selectbox(
-            "Type of context provided below (technical metadata):", context_type_options,
-            index=context_type_options.index(default_ctx_type) if default_ctx_type in context_type_options else 0
-        )
-        context_text = st.text_area(
-            "Parent comment / nearby comments / original post / consultation prompt (optional):",
-            value=ex_data.get("context", ""), height=100,
-            placeholder="Paste the parent comment, preceding replies, original post, or consultation question here..."
-        )
-        if context_text.strip() and context_type_selected == "NONE":
-            st.warning("You provided context text but selected context type NONE. Please select the appropriate context type above.")
+        labels = [c[0] for c in CONTEXT_TYPE_CHOICES]
+        chosen_label = st.selectbox("Context type", labels, index=0)
+        chosen_context_type = next(c[1] for c in CONTEXT_TYPE_CHOICES if c[0] == chosen_label)
+        chosen_help = next(c[2] for c in CONTEXT_TYPE_CHOICES if c[0] == chosen_label)
+        st.caption(chosen_help)
 
-        if not prescribed_future.strip():
-            prescribed_future = PF_EV
-        final_pf_single = augment_prescribed_future(prescribed_future, it_key_single)
+        context_text = ""
+        if chosen_context_type != "NONE":
+            context_text = st.text_area(
+                "Context text",
+                placeholder="Paste the relevant context here (e.g., the parent comment, nearby comments, the original post, or the consultation prompt).",
+                height=100
+            )
 
-        effective_context_type = context_type_selected if context_text.strip() else "NONE"
+        is_consultation = (chosen_context_type == "CONSULTATION_PROMPT")
+        effective_context_type = chosen_context_type if context_text.strip() else "NONE"
 
         st.markdown("---")
-        ready = bool(api_key and focal_text.strip())
+        st.markdown("## Step 4 -- Analyze the Comment")
+        ready = bool(api_key and focal_text.strip() and prescribed_future.strip())
+        if not prescribed_future.strip():
+            st.warning("Please define the prescribed future in Step 2.")
         if not focal_text.strip():
             st.warning("Please enter a focal comment in Step 2.")
         if not api_key:
@@ -1813,13 +1687,13 @@ def main():
             with st.spinner("Analyzing with the framework's definitions..."):
                 try:
                     result = analyze_comment(
-                        final_pf_single, focal_text.strip(), context_text.strip(),
-                        effective_context_type, is_consultation, api_key
+                        prescribed_future.strip(), focal_text.strip(), context_text.strip(),
+                        effective_context_type, is_consultation, api_key,
+                        allow_secondary_classifications=False
                     )
                     st.divider()
-                    render_breadcrumb("Home", MODE_SINGLE_LABEL, "Step 3: Results")
-                    st.markdown("## Analysis Results")
-                    show_results(result, final_pf_single)
+                    st.markdown("### Analysis Results")
+                    show_results(result, prescribed_future.strip(), allow_secondary_display=False)
                 except openai.AuthenticationError:
                     st.error("Invalid API key.")
                 except openai.RateLimitError:
@@ -1831,40 +1705,23 @@ def main():
     # MODE 2: DOCUMENT / CORPUS ANALYSIS
     # ═══════════════════════════════════════
     else:
-        render_breadcrumb("Home", MODE_DOC_LABEL)
-        st.caption(
-            "Upload or paste a collection of consumer comments, consultation "
-            "responses, forum posts, or social-media conversations. Each "
-            "focal comment is classified in the context of the conversation "
-            "or response structure in which it appears, where such structure "
-            "is available."
-        )
-        st.info(
-            "Institutional and policy documents can be used to define the "
-            "prescribed future (Step 1) and, for consultations, as the "
-            "consultation/policy context; they should not themselves be "
-            "classified as consumer orientations."
+        if "map_step2_confirmed" not in st.session_state:
+            st.session_state["map_step2_confirmed"] = False
+
+        st.markdown("---")
+        st.markdown("## Step 2 -- Define the Prescribed Future and Provide Comments")
+        st.write(
+            "Upload or paste consumer comments, consultation responses, forum "
+            "posts, or social-media conversations. Each focal comment is "
+            "classified using available conversational or consultation context."
         )
 
-        render_breadcrumb("Home", MODE_DOC_LABEL, "Step 1: Prescribed Future")
-        st.markdown("### Step 1 -- Define the Prescribed Future")
-        it_key_doc = render_intervention_type_selector("doc")
+        prescribed_future_doc = st.text_area(
+            "Prescribed future",
+            placeholder="Describe the specific policy or market intervention and the future it prescribes.",
+            height=85
+        )
 
-        pf_doc_default = st.session_state.get("pf_doc_prefill", PF_EV)
-        prescribed_future_doc = st.text_area("prescribed_future_doc", value=pf_doc_default, height=85, label_visibility="collapsed")
-        preset_cols = st.columns(3)
-        with preset_cols[0]:
-            if st.button("Use ZEV/EV preset", type="secondary"):
-                st.session_state["pf_doc_prefill"] = PF_EV; st.rerun()
-        with preset_cols[1]:
-            if st.button("Use NVES preset", type="secondary"):
-                st.session_state["pf_doc_prefill"] = PF_NVES; st.rerun()
-        with preset_cols[2]:
-            if st.button("Use AI-Healthcare preset", type="secondary"):
-                st.session_state["pf_doc_prefill"] = PF_AI_HEALTH; st.rerun()
-
-        render_breadcrumb("Home", MODE_DOC_LABEL, "Step 2: Provide Comments")
-        st.markdown("### Step 2 -- Provide the Comments")
         data_structure = st.radio(
             "Data structure:",
             ["Unstructured text (paste or upload .txt/.md/.pdf)",
@@ -1900,134 +1757,173 @@ def main():
                     if raw_text:
                         st.success(f"Extracted {len(raw_text):,} characters from '{uploaded_doc.name}'")
             else:
-                raw_text = st.text_area("Paste comments/responses here (one comment per paragraph, separated by a blank line):", height=250)
-
-        records = []
-        is_consultation_mode = False
-        consultation_prompt_text = ""
-
-        if csv_df is not None:
-            render_breadcrumb("Home", MODE_DOC_LABEL, "Step 3: Comment Boundaries")
-            st.markdown("### Step 3 -- Structured Comment Data")
-            records = build_comment_records_from_csv(csv_df)
-            n_with_parent = sum(1 for r in records if r.get("parent_comment_id"))
-            n_threads = len(set(r["thread_id"] for r in records))
-            st.info(f"Parsed {len(records)} comments across {n_threads} thread(s); {n_with_parent} comments have a recorded parent_comment_id.")
-            if not records:
-                st.error("Could not find a 'comment_text' column (or 'text'/'comment'). Please check your CSV headers.")
-
-        elif raw_text.strip():
-            render_breadcrumb("Home", MODE_DOC_LABEL, "Step 3: Comment Boundaries")
-            st.markdown("### Step 3 -- Configure Comment Boundaries")
-
-            id_hits = len(re.findall(r'\b\d{6,7}\s+(?:Name\s+withheld|[A-Z][a-z]+)', raw_text))
-            looks_like_consultation = id_hits >= 5
-
-            boundary_options = ["One comment per paragraph (default)", "Custom separator"]
-            if looks_like_consultation:
-                boundary_options.insert(0, f"Public consultation responses (auto-detected {id_hits} respondent IDs)")
-
-            boundary_choice = st.selectbox("Comment boundary detection:", boundary_options)
-
-            if boundary_choice.startswith("Public consultation"):
-                is_consultation_mode = True
-                records = build_comment_records_from_consultation(raw_text)
-                consultation_prompt_text = st.text_area(
-                    "Consultation question / policy proposal (used as context for every response):",
-                    height=90,
-                    placeholder="e.g., 'This consultation asks respondents whether the proposed New Vehicle Efficiency Standard should include additional support for regional infrastructure.'"
-                )
-                st.info(f"Extracted {len(records)} individual consultation responses, each treated as one focal response.")
-            elif boundary_choice == "Custom separator":
-                separator = st.text_input("Comment separator (exact string used to split comments):", value="---")
-                records = build_comment_records_from_paragraphs(raw_text, separator=separator)
-                st.warning(
-                    "This document does not contain explicit thread/parent metadata. "
-                    "Nearby comments will be used as approximate context; true reply "
-                    "relationships could not be reconstructed from unstructured text."
-                )
-            else:
-                records = build_comment_records_from_paragraphs(raw_text)
-                st.warning(
-                    "This document does not contain explicit thread/parent metadata. "
-                    "Each blank-line-separated paragraph is treated as one comment, "
-                    "and nearby comments are used as approximate context; true reply "
-                    "relationships could not be reconstructed from unstructured text."
+                raw_text = st.text_area(
+                    "Comments",
+                    placeholder="Paste comments here, one per paragraph, separated by a blank line.",
+                    height=250
                 )
 
-            if records:
-                st.info(f"{len(records)} analyzable comments detected.")
-                with st.expander(f"Preview first comments (of {len(records)} total)"):
-                    for rec in records[:10]:
-                        st.caption(f"[{rec['comment_id']}] {rec['comment_text'][:200]}{'...' if len(rec['comment_text']) > 200 else ''}")
-            else:
-                st.warning("No analyzable comments found. Try a different boundary method, or paste more text.")
+        if data_structure.startswith("Structured"):
+            valid_step2 = (csv_df is not None) and has_comment_text_column(csv_df)
+        else:
+            valid_step2 = bool(raw_text.strip()) and len(build_comment_records_from_paragraphs(raw_text)) > 0
 
-        total_detected = len(records)
+        next_disabled = not (prescribed_future_doc.strip() and valid_step2)
+        if next_disabled:
+            if not prescribed_future_doc.strip():
+                st.caption("Enter a prescribed future to continue.")
+            elif not valid_step2:
+                st.caption("Provide comments (a valid comment-text column, or nonempty pasted/uploaded text) to continue.")
 
-        if total_detected > 0:
-            render_breadcrumb("Home", MODE_DOC_LABEL, "Step 4: Run Analysis")
-            st.markdown("### Step 4 -- Run Analysis")
+        if st.button("Next", type="primary", use_container_width=True, disabled=next_disabled):
+            st.session_state["map_step2_confirmed"] = True
+            st.session_state["map_prescribed_future"] = prescribed_future_doc.strip()
+            st.session_state["map_data_structure"] = data_structure
+            st.session_state["map_raw_text"] = raw_text
+            st.session_state["map_csv_df"] = csv_df
+            for key in ("doc_results", "doc_prescribed_future", "doc_total_detected", "doc_sampling_description"):
+                st.session_state.pop(key, None)
+            st.rerun()
 
-            max_possible = max(1, min(total_detected, 300))
-            default_val = min(30, max_possible)
-            max_comments = st.slider(
-                "Number of comments to analyze (evenly sampled across the full set if fewer than all are selected)",
-                min_value=1, max_value=max_possible, value=default_val
+        if st.session_state.get("map_step2_confirmed"):
+            st.markdown("---")
+            if st.button("Edit Step 2 input (prescribed future or comments)"):
+                st.session_state["map_step2_confirmed"] = False
+                for key in ("doc_results", "doc_prescribed_future", "doc_total_detected", "doc_sampling_description"):
+                    st.session_state.pop(key, None)
+                st.rerun()
+
+            st.markdown("## Step 3 -- Configure Comment Boundaries and Context")
+            st.caption(
+                "When thread or parent metadata is available, the application "
+                "automatically uses the parent comment, nearby thread comments, "
+                "the original post, or the consultation prompt as interpretive "
+                "context for each focal comment."
             )
-            est_seconds = round(max_comments / DOC_MAX_WORKERS * 2.5)
-            est_cost = round(max_comments * 0.00075, 3)
-            st.caption(f"Estimated time: ~{est_seconds}s | API calls: {max_comments} (parallelized, {DOC_MAX_WORKERS} at a time) | Estimated cost: ~${est_cost}")
 
-            if max_comments >= total_detected:
-                sampling_preview = "Full set of analyzable comments."
-            else:
-                sampling_preview = f"Evenly distributed sample of {max_comments} from {total_detected} analyzable comments."
-            st.caption(f"**Sampling method:** {sampling_preview}")
+            stored_prescribed_future = st.session_state.get("map_prescribed_future", "")
+            stored_data_structure = st.session_state.get("map_data_structure", "")
+            stored_raw_text = st.session_state.get("map_raw_text", "")
+            stored_csv_df = st.session_state.get("map_csv_df")
 
-            run_doc_analysis = st.button("Analyze Comments", type="primary", use_container_width=True, disabled=not api_key)
-            if not api_key:
-                st.warning("Please configure your OpenAI API key above.")
+            records = []
+            is_consultation_mode = False
+            consultation_prompt_text = ""
 
-            if run_doc_analysis:
-                final_pf_doc = augment_prescribed_future(prescribed_future_doc, it_key_doc)
-                by_id, thread_order = index_threads(records)
+            if stored_data_structure.startswith("Structured") and stored_csv_df is not None:
+                records = build_comment_records_from_csv(stored_csv_df)
+                n_with_parent = sum(1 for r in records if r.get("parent_comment_id"))
+                n_threads = len(set(r["thread_id"] for r in records))
+                st.info(f"Parsed {len(records)} comments across {n_threads} thread(s); {n_with_parent} comments have a recorded parent_comment_id.")
+            elif stored_raw_text.strip():
+                id_hits = len(re.findall(r'\b\d{6,7}\s+(?:Name\s+withheld|[A-Z][a-z]+)', stored_raw_text))
+                looks_like_consultation = id_hits >= 5
+
+                boundary_options = ["One comment per paragraph (default)", "Custom separator"]
+                if looks_like_consultation:
+                    boundary_options.insert(0, f"Public consultation responses (auto-detected {id_hits} respondent IDs)")
+
+                boundary_choice = st.selectbox("Comment boundary detection:", boundary_options)
+
+                if boundary_choice.startswith("Public consultation"):
+                    is_consultation_mode = True
+                    records = build_comment_records_from_consultation(stored_raw_text)
+                    consultation_prompt_text = st.text_area(
+                        "Consultation question / policy proposal (used as context for every response):",
+                        height=90,
+                        placeholder="Describe the official question or policy proposal that respondents were answering."
+                    )
+                    st.info(f"Extracted {len(records)} individual consultation responses, each treated as one focal response.")
+                elif boundary_choice == "Custom separator":
+                    separator = st.text_input("Comment separator (exact string used to split comments):", value="---")
+                    records = build_comment_records_from_paragraphs(stored_raw_text, separator=separator)
+                    st.caption(
+                        "This input does not contain explicit thread/parent metadata. "
+                        "Nearby comments will be used as approximate context; true "
+                        "reply relationships could not be reconstructed from "
+                        "unstructured text."
+                    )
+                else:
+                    records = build_comment_records_from_paragraphs(stored_raw_text)
+                    st.caption(
+                        "This input does not contain explicit thread/parent metadata. "
+                        "Each blank-line-separated paragraph is treated as one "
+                        "comment, and nearby comments are used as approximate "
+                        "context; true reply relationships could not be "
+                        "reconstructed from unstructured text."
+                    )
+
+                if records:
+                    st.info(f"{len(records)} analyzable comments detected.")
+                    with st.expander(f"Preview first comments (of {len(records)} total)"):
+                        for rec in records[:10]:
+                            st.caption(f"[{rec['comment_id']}] {rec['comment_text'][:200]}{'...' if len(rec['comment_text']) > 200 else ''}")
+                else:
+                    st.warning("No analyzable comments found with the current boundary method.")
+
+            total_detected = len(records)
+
+            if total_detected > 0:
+                st.markdown("---")
+                st.markdown("## Step 4 -- Run the Analysis")
+
+                max_possible = max(1, min(total_detected, 300))
+                default_val = min(30, max_possible)
+                max_comments = st.slider(
+                    "Number of comments to analyze (evenly sampled across the full set if fewer than all are selected)",
+                    min_value=1, max_value=max_possible, value=default_val
+                )
+                est_seconds = round(max_comments / DOC_MAX_WORKERS * 2.5)
+                est_cost = round(max_comments * 0.00075, 3)
+                st.caption(f"Estimated time: ~{est_seconds}s | API calls: {max_comments} (parallelized, {DOC_MAX_WORKERS} at a time) | Estimated cost: ~${est_cost}")
 
                 if max_comments >= total_detected:
-                    sample_indices = list(range(total_detected))
-                    sampling_description = "Full set of analyzable comments."
+                    sampling_preview = "Full set of analyzable comments."
                 else:
-                    sample_indices = compute_evenly_spaced_sample_indices(total_detected, max_comments)
-                    sampling_description = f"Evenly distributed sample of {len(sample_indices)} from {total_detected} analyzable comments."
+                    sampling_preview = f"Evenly distributed sample of {max_comments} from {total_detected} analyzable comments."
+                st.caption(f"Sampling method: {sampling_preview}")
 
-                prepared_records = []
-                for idx in sample_indices:
-                    rec = records[idx]
-                    context_text, context_type, context_available = build_context(
-                        rec, by_id, thread_order, consultation_prompt_text, is_consultation_mode
-                    )
-                    prepared_records.append({
-                        **rec,
-                        "context_text": context_text, "context_type": context_type,
-                        "context_available": context_available, "is_consultation": is_consultation_mode,
-                    })
+                run_doc_analysis = st.button("Analyze Comments", type="primary", use_container_width=True, disabled=not api_key)
+                if not api_key:
+                    st.warning("Please configure your OpenAI API key above.")
 
-                progress_bar = st.progress(0, text="Starting analysis...")
-                doc_results = analyze_document(prepared_records, final_pf_doc, api_key, progress_bar)
-                progress_bar.empty()
+                if run_doc_analysis:
+                    by_id, thread_order = index_threads(records)
 
-                st.session_state["doc_results"] = doc_results
-                st.session_state["doc_prescribed_future"] = final_pf_doc
-                st.session_state["doc_total_detected"] = total_detected
-                st.session_state["doc_sampling_description"] = sampling_description
+                    if max_comments >= total_detected:
+                        sample_indices = list(range(total_detected))
+                        sampling_description = "Full set of analyzable comments."
+                    else:
+                        sample_indices = compute_evenly_spaced_sample_indices(total_detected, max_comments)
+                        sampling_description = f"Evenly distributed sample of {len(sample_indices)} from {total_detected} analyzable comments."
+
+                    prepared_records = []
+                    for idx in sample_indices:
+                        rec = records[idx]
+                        context_text, context_type, context_available = build_context(
+                            rec, by_id, thread_order, consultation_prompt_text, is_consultation_mode
+                        )
+                        prepared_records.append({
+                            **rec,
+                            "context_text": context_text, "context_type": context_type,
+                            "context_available": context_available, "is_consultation": is_consultation_mode,
+                        })
+
+                    progress_bar = st.progress(0, text="Starting analysis...")
+                    doc_results = analyze_document(prepared_records, stored_prescribed_future, api_key, progress_bar)
+                    progress_bar.empty()
+
+                    st.session_state["doc_results"] = doc_results
+                    st.session_state["doc_prescribed_future"] = stored_prescribed_future
+                    st.session_state["doc_total_detected"] = total_detected
+                    st.session_state["doc_sampling_description"] = sampling_description
 
         if "doc_results" in st.session_state:
-            st.divider()
-            render_breadcrumb("Home", MODE_DOC_LABEL, "Step 5: Results")
-            st.markdown("## Comment-Level Analysis")
+            st.markdown("---")
+            st.markdown("## Step 5 -- Review Results")
             show_document_summary(
                 st.session_state["doc_results"],
-                st.session_state.get("doc_prescribed_future", PF_EV),
+                st.session_state.get("doc_prescribed_future", ""),
                 total_detected=st.session_state.get("doc_total_detected"),
                 sampling_description=st.session_state.get("doc_sampling_description", "")
             )
@@ -2061,10 +1957,10 @@ def main():
                     for r in report["results"]:
                         status = "PASS" if r["match"] else "FAIL"
                         with st.expander(f"[{status}] {r['example']}"):
-                            st.write("**Expected (dominant):**", r["expected"])
-                            st.write("**Predicted (dominant):**", r["predicted"])
+                            st.write("Expected (dominant):", r["expected"])
+                            st.write("Predicted (dominant):", r["predicted"])
                             if r.get("secondary_expected"):
-                                st.write(f"**Secondary check [{'PASS' if r.get('secondary_match') else 'FAIL'}]:** expected {r['secondary_expected']}")
+                                st.write(f"Secondary check [{'PASS' if r.get('secondary_match') else 'FAIL'}]: expected {r['secondary_expected']}")
                             if r.get("error"):
                                 st.error(r["error"])
                 else:
