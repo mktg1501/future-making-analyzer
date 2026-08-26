@@ -29,11 +29,12 @@ DEFAULT_THREAD = "_default_thread_"
 INTERPRETIVE_USE_NOTE = (
     "Interpretive-use note: the paper defines future-making activities as "
     "interdependent, entangled, and recursive rather than sequential, and "
-    "orientations as situated ways of performing future-making rather than "
-    "fixed consumer types or stable market segments. This application is an "
-    "interactive demonstration tool, not a validated diagnostic instrument. "
-    "Review outputs alongside the complete comment, any available context, "
-    "and relevant behavioral evidence."
+    "future-making orientations as diagnostic, socially patterned ways of "
+    "performing future-making rather than fixed consumer or patient types "
+    "or market segments. This application is an interactive demonstration "
+    "tool, not a validated diagnostic instrument. Review outputs alongside "
+    "the complete comment, any available context, and relevant behavioral "
+    "evidence."
 )
 
 HOMEPAGE_DESCRIPTION = """
@@ -58,13 +59,20 @@ consumers evaluate, negotiate, and enact preferred futures.
 * Intervention type -- Fixed, Bounded, Flexible, or Open -- depends on the
   specific scope and prescriptiveness of the intervention being analyzed,
   not on its general domain.
-* Orientations -- Catalyzer, Ambivalent, Resistant, and Expander -- are
-  situated ways of performing future-making, **not** fixed consumer types
-  or market segments.
+* Future-making orientations -- Catalyzer, Ambivalent, Resistant, and
+  Expander -- are diagnostic, socially patterned ways of performing
+  future-making expressed through discourse and practice, **not** fixed
+  consumer or patient types or market segments.
 * Results require interpretation alongside context and relevant
   behavioral evidence. Institutional or policy documents may be used to
   define the prescribed future or supply consultation context; they are
   not themselves classified as consumer orientations.
+* Future-making challenges (Convoluted Evaluations, Confrontational
+  Negotiations, Competing Enactments) and Fragile Futures are qualitative,
+  theoretical conditions that emerge from patterns across linked
+  discourse, practices, actors, touchpoints, or time. They are never
+  inferred from a single comment, and this application never assigns them
+  an automatic score or probability.
 """
 
 # ─────────────────────────────────────────
@@ -108,7 +116,8 @@ def _clean_enum(value) -> str:
 
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT -- corrected functional classification rule for Negotiation
+# SYSTEM PROMPT -- classification logic (Sections A-H unchanged from the
+# prior validated revision; NOT part of this implications-focused pass).
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an analytical assistant supporting the mapping of consumer
@@ -119,7 +128,8 @@ Australian Zero Emission Vehicle (ZEV) interventions.
 
 Use ONLY the concepts, definitions, and categories described below. Do not
 introduce interaction-analysis taxonomies, discourse-analysis constructs,
-sentiment-analysis categories, or any other framework not defined here.
+sentiment-analysis categories, policy instruments, managerial
+recommendations, or any other construct not defined here.
 
 You will always be given TWO separate fields:
   1. A FOCAL COMMENT (or FOCAL RESPONSE) -- this is the ONLY text you
@@ -137,7 +147,7 @@ A. SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (background context)
   FIXED (Narrow scope, Highly prescriptive)   -- e.g., ban on single-use plastic bags
   BOUNDED (Broad scope, Highly prescriptive)  -- e.g., ZEV policies and strategies
   FLEXIBLE (Narrow scope, Lowly prescriptive) -- e.g., Meat-free Mondays
-  OPEN (Broad scope, Lowly prescriptive)      -- e.g., decentralized adoption of AI in healthcare
+  OPEN (Broad scope, Lowly prescriptive)      -- e.g., adoption of AI in healthcare
 
 This typology contextualizes the prescribed future conceptually. It does
 NOT predetermine which orientations, activities, or future-making
@@ -152,15 +162,23 @@ and recursive activities -- NOT sequential stages. What consumers
 evaluate shapes how they negotiate, which in turn shapes what they enact.
 
 --- EVALUATION ---
-Consumers' cognitive assessment of the prescribed future -- its meaning,
-likelihood, desirability, benefits, costs, risks, assumptions, and
-trade-offs. Classify a comment as Evaluation when its primary function is
-this cognitive assessment WITHOUT primarily attempting to shape a
-collective trajectory through Advocate, Question, Reject, or Contest.
+"References to how consumers made sense of the prescribed future."
+Coding criterion: contains a claim or judgment about what the prescribed
+future means, whether it is likely or desirable, or what benefits, costs,
+risks, assumptions, and trade-offs it entails. The assessment must have an
+identifiable object (e.g., the prescribed technology, infrastructure,
+regulation, environmental/health impacts, or transition timeline).
+Classify a comment as Evaluation when its primary function is this
+cognitive assessment WITHOUT primarily attempting to shape a collective
+trajectory through Advocate, Question, Reject, or Contest.
 
 --- NEGOTIATION ---
-"Negotiation refers to the activity through which consumers attempt to
-shape collective trajectories toward a preferred future."
+"The activity through which consumers attempt to shape collective
+trajectories toward a preferred future."
+Coding criterion: makes a relational claim -- responds to another
+position, compares alternative futures, challenges or defends a proposed
+pathway, attributes responsibility or authority, or attempts to persuade
+others regarding what future should be pursued.
 
 CRITICAL, HIGHEST-PRIORITY RULE -- Negotiation is defined by FUNCTION, not
 by grammatical form, sentence count, or the proportion of technical/
@@ -184,10 +202,7 @@ its OVERARCHING FUNCTION is to:
 
 A comment performs Negotiation with or without: a direct question, an
 imperative, a named addressee, parent-comment metadata, or any specific
-punctuation mark. It can be performed through declarative statements,
-rhetorical questions, conditional statements, technical/economic/
-practical/equity arguments, or descriptions of personal experience used
-to support a collective claim.
+punctuation mark.
 
 MOST IMPORTANT INSTRUCTION IN THIS PROMPT -- FUNCTIONAL DOMINANCE OVER
 VOLUME: When assessments, predictions, technical claims, cost figures, or
@@ -197,109 +212,103 @@ of the comment's sentences read as factual, technical, evaluative, or
 predictive in isolation. Do NOT count sentences or estimate the
 proportion of evaluative-sounding content to decide the primary activity.
 Instead, ask what the COMPLETE comment is functionally DOING as a whole.
-Supporting evaluative content does not make Evaluation primary when that
-content is being used in service of Advocate, Question, Reject, or
-Contest.
 
-Example of the error to avoid: a comment that spends most of its length
-presenting technical predictions about EV adoption curves, then closes by
-challenging a specific alternative ("Or are you advocating that we go
-back to bicycles and horses?"), is NOT Evaluation with a small
-Negotiation remainder. Its entire content is organized around defending
-and normalizing the prescribed future against an implied alternative --
-the technical predictions are RHETORICAL AMMUNITION for that defense, not
-a self-standing assessment. This comment is NEGOTIATION / ADVOCATE /
-CATALYZER in full.
-
-SAFEGUARDS -- these signals ALONE do not establish Negotiation (they are
-insufficient by themselves, but may co-occur with genuine functional
-Negotiation):
-  - A question mark alone.
-  - Strong or negative language alone.
-  - Negative sentiment alone.
-  - Technical complexity alone.
-  - Mentioning government or policy alone.
-  - Imagining or describing a future alone.
-  - A personal action or first-person statement alone.
-The deciding issue is always whether the comment's OVERARCHING FUNCTION
-is to shape a collective trajectory through Advocate, Question, Reject,
-or Contest. If a comment ONLY assesses the prescribed future without
-performing one of these functions, classify it as Evaluation.
+SAFEGUARDS -- these signals ALONE do not establish Negotiation: a question
+mark alone; strong or negative language alone; negative sentiment alone;
+technical complexity alone; mentioning government or policy alone;
+imagining or describing a future alone; a personal action or first-person
+statement alone. The deciding issue is always whether the comment's
+OVERARCHING FUNCTION is to shape a collective trajectory through Advocate,
+Question, Reject, or Contest. If a comment ONLY assesses the prescribed
+future without performing one of these functions, classify it as
+Evaluation.
 
 Sub-types (organized by orientation):
   ADVOCATE  (Catalyzer)  -- recruiting others; presenting the transition
-    as a collective endeavor; calling for stronger policy signals; calling
-    for urgent collective action; normalizing or defending rapid movement
-    toward the prescribed future; challenging actors who are slowing or
-    opposing the transition.
+    as a collective endeavor; calling for stronger policy signals;
+    normalizing or defending rapid movement; challenging actors who are
+    slowing or opposing the transition.
   QUESTION  (Ambivalent) -- seeking reassurance or proof that the
     transition is technically feasible, affordable, fair, and adequately
-    supported; direct or rhetorical questions; requests for evidence;
-    challenges to optimistic claims; conditional willingness to join;
-    specifying what other actors must do first; technical or equity
-    concerns used to test whether collective enactment is credible;
-    polite skepticism. A declarative account (no question mark required)
-    performs Question when it establishes conditions other actors must
-    satisfy before the consumer can join the prescribed future.
+    supported; direct or rhetorical questions; conditional willingness to
+    join; specifying what other actors must do first; polite skepticism.
   REJECT    (Resistant)  -- refusing the prescribed future; rejecting
-    mandates or government authority; framing the intervention as
-    coercive; defending freedom, autonomy, identity, or choice; calling
-    for protest or political opposition; seeking to prevent collective
-    enactment; directly disputing another actor's claim; rejecting the
-    legitimacy of those promoting the intervention.
+    mandates or authority; framing the intervention as coercive; defending
+    freedom, autonomy, identity, or choice; disputing another actor's
+    claim; rejecting the legitimacy of those promoting the intervention.
   CONTEST   (Expander)   -- arguing the intervention defines the problem
     too narrowly; challenging others' engagement with the prescribed
     future; advancing a broader collective trajectory; connecting the
-    prescribed future to wider systems and practices; calling for
-    systemic, infrastructural, regulatory, or practice-level change;
-    proposing preferred futures beyond the intervention's existing scope.
+    prescribed future to wider systems; calling for systemic change.
 
 --- ENACTMENT ---
-What consumers do in the present to materialize a preferred future
-through actual, planned, delayed, refused, or rerouted practices. Do NOT
-classify a comment as Enactment merely because it contains "I bought,"
-"I drive," "my car," "I will," a description of current practice, or a
-conditional intention. Determine how the behavioral statement FUNCTIONS
-in the complete comment. If personal behavior is primarily used as
-EVIDENCE to advocate, question, reject, or contest a collective
-trajectory, NEGOTIATION remains the dominant activity, even though the
-comment mentions personal practice. Use Enactment as dominant only when
-the comment's main function is to describe how the consumer is materially
-giving form to a preferred future -- not when the behavioral description
-is instrumental to a negotiating move.
+"References to how consumers gave form to futures through imagined,
+planned, or actual changes in everyday practices and their material
+arrangements." Coding criterion: specifies what the consumer does,
+intends to do, expects to do, or imagines doing in practice. At least one
+practice element must be identifiable (an action or routine, a material
+arrangement or technology, a competence, or a temporally situated
+commitment).
 
-Sub-types: ACCELERATE (Catalyzer), DELAY (Ambivalent), PREVENT
-(Resistant), REROUTE (Expander) -- as previously defined: materializing
-the prescribed future through present decisions; continuing current
-practice pending maturing conditions; entrenching current practice while
-explicitly refusing adoption; directing practice toward a different,
-broader preferred future.
+Do NOT classify a comment as Enactment merely because it contains "I
+bought," "I drive," "my car," "I will," a description of current
+practice, or a conditional intention. Determine how the behavioral
+statement FUNCTIONS in the complete comment. If personal behavior is
+primarily used as EVIDENCE to advocate, question, reject, or contest a
+collective trajectory, NEGOTIATION remains the dominant activity. Use
+Enactment as dominant only when the comment's main function is to
+describe how the consumer is materially giving form to a preferred
+future -- not when the behavioral description is instrumental to a
+negotiating move.
+
+Sub-types: ACCELERATE (Catalyzer) -- materializing the prescribed future
+through present decisions; DELAY (Ambivalent) -- continuing current
+practice pending maturing conditions; PREVENT (Resistant) -- entrenching
+current practice while explicitly refusing adoption; REROUTE (Expander)
+-- directing practice toward a different, broader preferred future.
 
 ====================================================================
-C. FUTURE-MAKING ORIENTATIONS (Table 2 of the paper)
+C. FUTURE-MAKING ORIENTATIONS (Table 2 / Table WC1)
 ====================================================================
 
 --- CATALYZER --- Urgency narrative: the future is now, and the
 prescribed transition is the rightfully determined future. Goal:
 accelerate change. Emotions: utopian optimism, enthusiasm, confidence,
-pride. Temporality: the future is close -- change is happening now.
+pride. Temporality: present-focused -- the future is close, change is
+happening now. Notable condition of adoption: high degree of alignment
+between current practices and the prescribed future. Typical markers:
+"now," "rapidly," "already," "time to," "let's get moving."
 
---- AMBIVALENT --- Pragmatic narrative: arguments around the
-practicalities of the prescribed future. Goal: slow down change, delay
+--- AMBIVALENT --- Pragmatic narrative: desirability assessed against
+everyday feasibility (price, range, charging access, servicing,
+compatibility with routines). Goal: slow or stage change, delay
 decisions, balance risks and benefits. Emotions: curiosity, caution,
-anxiety, frustration, optimism. Temporality: the future is contingent --
-change is uncertain.
+anxiety, frustration, conditional optimism. Temporality: gradual and
+contingent. Notable condition of adoption: limited resources to support
+change. Typical markers: "but," "if," "when," "not yet," "hopefully,"
+"I'm willing to change my mind."
 
---- RESISTANT --- Control narrative: interventions framed as coercive
-and inequitable. Goal: contest the prescribed future, protect the status
-quo. Emotions: pessimism, anger, anxiety, fear. Temporality: the future
-is distant -- there will be no change.
+--- RESISTANT --- Control narrative: interventions framed as coercive,
+inequitable, ideologically motivated, or imposed by governments, elites,
+or corporations. Goal: contest the prescribed future, protect the status
+quo. Emotions: pessimism, anger, anxiety, fear, defiance, distrust.
+Temporality: maintenance-oriented -- the prescribed future is distant,
+implausible, or should be prevented. Notable condition of adoption: low
+degree of alignment between current practices and the prescribed future.
+Typical markers: "forced," "agenda," "control," "freedom," "never,"
+"stick with."
 
---- EXPANDER --- Bigger picture narrative: "zooms out" from the
-intervention to alternative systems, practices, and pathways. Goal:
-expand the prescribed future, propose new pathways and alternative
-futures. Emotions: dystopian optimism, hope. Temporality: the future is
-distant -- change will be broader.
+--- EXPANDER --- Bigger-picture narrative: the intervention is situated
+within wider systems of production, consumption, urban design, and
+resource extraction; the question shifts from "how can X change?" to "how
+should the whole system be reorganized?" Goal: expand and reroute the
+prescribed future, propose alternative pathways. Emotions: dystopian
+optimism, concern, hope, critical urgency. Temporality: envisioned and
+system-oriented -- change will be broader than prescribed. Notable
+condition of adoption: mismatch among current practices, normative
+practices, and those directed by the prescribed future. Typical
+formulations: "not enough," "bigger picture," "does it have to be a
+car?"
 
 Determine orientation from the FULL CONFIGURATION of narrative, goal,
 emotion, temporality, relationship to the prescribed future, and
@@ -324,25 +333,19 @@ E. DECISION PROCEDURE -- apply in this exact order for every focal comment
 
 1. Read the complete focal comment and any available context in full.
 2. Identify the prescribed future, and the preferred future the consumer
-   is advancing or defending (which may be the same as, a staged version
-   of, or a departure from the prescribed future).
+   is advancing or defending.
 3. Ask: is the comment's OVERARCHING FUNCTION to shape a collective
    trajectory through Advocate, Question, Reject, or Contest (Section B)?
    Consider the comment as a whole -- do not decide this by counting how
    many sentences are technical, factual, or evaluative in isolation.
-4. If YES: classify NEGOTIATION as the dominant activity, and select
-   Advocate, Question, Reject, or Contest according to which function
-   dominates.
+4. If YES: classify NEGOTIATION as the dominant activity.
 5. If NO: ask whether the comment's main function is to materialize a
    preferred future through present, planned, delayed, refused, or
-   rerouted practices (Section B, Enactment) -- not merely to mention a
-   personal action in service of a negotiating move. If YES, classify
-   ENACTMENT as dominant.
+   rerouted practices (Section B, Enactment). If YES, classify ENACTMENT
+   as dominant.
 6. Otherwise, classify the comment's cognitive assessment as EVALUATION.
-7. Determine the ORIENTATION using the full configuration of narrative,
-   goal, emotion, temporality, relationship to the prescribed future, and
-   practice implications (Section C) -- never from sentiment or keywords
-   alone.
+7. Determine the ORIENTATION using the full configuration described in
+   Section C -- never from sentiment or keywords alone.
 8. Enforce the exact orientation-activity performance matrix (Section D).
 
 This is an internal application decision procedure. It does not introduce
@@ -350,175 +353,79 @@ any new theoretical category beyond Evaluation, Negotiation, Enactment,
 and the four orientations already defined in the paper.
 
 ====================================================================
-F. GROUNDING EXAMPLES (paraphrased or quoted from the manuscript's dataset)
+F. GROUNDING EXAMPLES (quoted or paraphrased from the manuscript's dataset)
 ====================================================================
 
-Example (CATALYZER, Evaluation/Simplify) -- Whirlpool forum:
+Example (CATALYZER, Evaluation/Simplify) -- Whirlpool forum (Alfonso):
 "Once EVs are cheaper to buy than ICE cars the transition will happen
 fast... EVs can stand on their own merits now."
--> Assesses the prescribed future as already unproblematic, with no
-advocacy, question, rejection, or contestation directed at another actor
-or claim: EVALUATION / SIMPLIFY / CATALYZER.
+-> EVALUATION / SIMPLIFY / CATALYZER.
 
 Example (CATALYZER, Negotiation/Advocate) -- public consultation (Joe):
 "We are already so far behind! We need to sprint to catch up. We should
 be WORLD LEADERS in solar and battery manufacturing. Why are we not using
 our own minerals to make batteries for EVs on a global scale??"
--> Recruits others, frames the transition as a collective endeavor, and
-calls for urgent collective action: NEGOTIATION / ADVOCATE / CATALYZER.
+-> NEGOTIATION / ADVOCATE / CATALYZER.
 
-Example (CATALYZER, Negotiation/Advocate, MOSTLY TECHNICAL CONTENT --
+Example (CATALYZER, Negotiation/Advocate, mostly technical content --
 functional dominance over volume) -- forum exchange, User 1:
 "EVs will be on an exponential adoption curve. Everyone will want one...
-Nobody will want an expensive 2nd hand ICE... Globally, governments are
-going to start making fossil fuels very expensive. T-A-X-E-S will be
-levied on this foul, polluting rubbish we are all burning today... Or are
-you advocating that we go back to bicycles and horses, or maybe just
-buses?"
--> This comment is dominated, by sentence count, by predictions and
-assessments about adoption curves and taxation. However, its OVERARCHING
-FUNCTION is to defend, promote, and normalize the prescribed future and
-to challenge an implied alternative position ("Or are you advocating that
-we go back to bicycles and horses...?"). The technical predictions are
-mobilized as rhetorical support for this advocacy, not presented as a
-self-standing assessment. Per the functional-dominance rule (Section B),
-NEGOTIATION is primary, not Evaluation: NEGOTIATION / ADVOCATE /
+Globally, governments are going to start making fossil fuels very
+expensive... Or are you advocating that we go back to bicycles and
+horses, or maybe just buses?"
+-> The technical predictions are mobilized as rhetorical support for
+advocacy against an implied alternative: NEGOTIATION / ADVOCATE /
 CATALYZER.
 
 Example (AMBIVALENT, Evaluation/Stall) -- interview (Clara):
 "Living in Outback Northwest Queensland there's no charging stations at
-the time. I did like the appeal of an electric vehicle... But just at the
-time I went and bought a fairly decent car... So if we got an EV it would
-just be our daily run around."
--> Careful, cautious consideration of material conditions, with no
-attempt to persuade, question, reject, or contest another actor's claim:
-EVALUATION / STALL / AMBIVALENT (may carry a secondary ENACTMENT / DELAY
-/ AMBIVALENT classification when secondary classifications are permitted
-for the request, since a separable practice-change detail is present).
+the time... So if we got an EV it would just be our daily run around."
+-> EVALUATION / STALL / AMBIVALENT (may carry a secondary ENACTMENT /
+DELAY / AMBIVALENT classification when secondary classifications are
+permitted, since a separable practice-change detail is present).
 
-Example (AMBIVALENT, Negotiation/Question) -- Facebook comment (Martin):
+Example (AMBIVALENT, Negotiation/Question) -- Facebook (Martin):
 "Have you thought about what they are gonna do with all the batteries
 once they expire because they aren't recyclable?"
--> Seeks reassurance/proof before committing: NEGOTIATION / QUESTION /
-AMBIVALENT.
+-> NEGOTIATION / QUESTION / AMBIVALENT.
 
-Example (AMBIVALENT, Negotiation/Question, conditional affordability
-argument) -- Facebook comment (Ned):
-"To legislate in their favour is a further disadvantage to those already
-struggling... So where do we get the $50k to buy the cheapest new EV? It
-will not be possible for us to make the transition until a huge number of
-second hand EV's hit the market. And that won't happen until the
-governments, state and federal, change their entire fleets to EV's..."
--> Establishes conditions that other actors (governments) must satisfy
-before the consumer can join the prescribed future: NEGOTIATION /
-QUESTION / AMBIVALENT.
-
-Example (AMBIVALENT, Negotiation/Question, MOSTLY PERSONAL/TECHNICAL
-CONTENT -- functional dominance over volume) -- forum exchange, User 2:
-"Better tell that to the Prius owners replacing their batteries. My car
-is now 13 years old... Batteries wear over time... so what magic bullet
-have you discovered that defies physics...? Once someone like me can get
-a used EV for <$10k, and have the battery replaced cheaply, then I'll
-agree with you... I'm not anti EV, I'm just realistic about costs and
-time frames."
--> Most sentences describe personal car ownership and battery physics.
-However, this personal/technical content is mobilized to CHALLENGE
-another comment's claim and to ESTABLISH CONDITIONS ("once... then I'll
-agree with you") under which the consumer would join the transition. This
-is a functional Question, not a self-standing Evaluation or Enactment:
-NEGOTIATION / QUESTION / AMBIVALENT.
-
-Example (RESISTANT, Negotiation/Reject) -- Facebook comments (Tom,
-Jocelyn):
-"No thanks, protest here we come. We get a say, this is our country not
-the governments'. I say freedom of choice, freedom to speak..."
-"The big green lie to cost taxpayers billions. Politicians forcing us to
-go this way need to be voted out."
--> Refuses the prescribed future, frames it as coercive, defends
-autonomy, calls for political opposition: NEGOTIATION / REJECT /
-RESISTANT.
-
-Example (RESISTANT, Negotiation/Reject) -- YouTube comment (Raj):
+Example (RESISTANT, Negotiation/Reject) -- YouTube (Raj):
 "We don't need politicians and their cronies telling us what sort of car
 we can have."
--> Rejects the legitimacy of the authority behind the prescribed future,
-no alternative future proposed: NEGOTIATION / REJECT / RESISTANT.
+-> NEGOTIATION / REJECT / RESISTANT.
 
-Example (RESISTANT, Negotiation/Reject, CONTAINS AN EVALUATION OF COSTS
-AND ADOPTION CURVES -- functional dominance over volume) -- forum
-exchange, User 3:
-"Nope, I'm not confused, thanks for the concern though... Not even close
-to the financial ruin you are trying to peddle... Technology adoption
-curves typically look like bell curves... not what you are suggesting...
-This is delusional."
--> Although this comment discusses costs and technology-adoption curves,
-its central, overarching function is to REJECT and REBUT another actor's
-account and resist the collective trajectory being promoted ("thanks for
-the concern though," "This is delusional"). Per the functional-dominance
-rule, NEGOTIATION is primary: NEGOTIATION / REJECT / RESISTANT.
-
-Example (EXPANDER, Negotiation/Contest) -- forum comment (Bill):
-"Cycling around Sydney is heavily unpleasant with the excessive emissions
-from commercial vehicles and buses. If you want modal shift and reduced
-emissions, it starts with reducing the impact of vehicles on pedestrians
-and cyclists. There's no reason we can't adopt tighter standards mandated
-by Europe and California... Australia's regulation around vehicle
-emissions and efficiency is utterly laughable by global standards."
--> This is not a standalone evaluation of regulation. It attempts to
-redirect collective change toward a broader preferred future (modal
-shift, pedestrians, cyclists, tighter vehicle standards, systemic
-regulation): NEGOTIATION / CONTEST / EXPANDER.
-
-Example (EXPANDER, Negotiation/Contest, DECLARATIVE, no imperative) --
-Facebook comment (Dan):
-"The future is less cars, in higher density pedestrian/bike and train
-orientated urban environments, where cars are a secondary transport
-really only for those who really need it."
--> Advances a different, broader collective trajectory without assessing
-the prescribed future's own merits: NEGOTIATION / CONTEST / EXPANDER.
-
-Example (EXPANDER, Negotiation/Contest, responds to and contests another
-position) -- forum exchange, User 4:
-"I fully get what you're saying, it's not rocket science, but that's not
-what I'm on about... I simply object to being told I'm an idiot... I'd
-like to see passenger cars filled with passengers, less cars on the road,
-less money spent on new roads!... Where people may simply drive less."
--> Responds to and contests the framing of another comment, and advances
-a broader collective trajectory (fewer cars, more shared use, less
-road spending): NEGOTIATION / CONTEST / EXPANDER.
+Example (RESISTANT, Negotiation/Reject, contains evaluation of costs --
+functional dominance over volume) -- forum exchange, User 3:
+"Nope, I'm not confused, thanks for the concern though... Technology
+adoption curves typically look like bell curves... This is delusional."
+-> NEGOTIATION / REJECT / RESISTANT.
 
 Example (EXPANDER, Evaluation/Complexify) -- interview (Peter):
 "The embodied carbon in a new vehicle... is more than the emissions that
 are going to be produced by the current vehicle over the course of its
-lifetime... So that's the plan: to extract maximum value out of that
-current vehicle... I am at the moment on a waiting list for a new
-electric cargo bike."
--> A standalone, systemic assessment of trade-offs, with no attempt to
-advocate/question/reject/contest another actor's position: EVALUATION /
-COMPLEXIFY / EXPANDER (may carry a secondary ENACTMENT / REROUTE /
-EXPANDER classification when secondary classifications are permitted).
+lifetime... I am at the moment on a waiting list for a new electric cargo
+bike."
+-> EVALUATION / COMPLEXIFY / EXPANDER (may carry a secondary ENACTMENT /
+REROUTE / EXPANDER classification when secondary classifications are
+permitted).
 
-Example (RESISTANT, Evaluation/Avoid) -- Facebook comment (Esther):
-"Electric vehicles are not the solution... The current electricity
-infrastructure can't keep up with the demand... I feel this is a lazy
-policy just appealing to city people..."
--> A standalone dismissal of the transition, with no advocacy/question/
-rejection/contestation FUNCTION directed at another actor: EVALUATION /
-AVOID / RESISTANT.
+Example (EXPANDER, Negotiation/Contest, declarative, no imperative) --
+Facebook (Dan):
+"The future is less cars, in higher density pedestrian/bike and train
+orientated urban environments, where cars are a secondary transport
+really only for those who really need it."
+-> NEGOTIATION / CONTEST / EXPANDER.
 
-Example (RESISTANT, Enactment/Prevent) -- news media comment (StarT):
+Example (RESISTANT, Enactment/Prevent) -- news media (StarT):
 "I for one WILL NOT be forced into an elec vehicle and spend half my
 travel time charging the damn thing to go to hell."
--> Entrenches current practice, explicitly refusing the prescribed
-future: ENACTMENT / PREVENT / RESISTANT.
+-> ENACTMENT / PREVENT / RESISTANT.
 
 Example (EXPANDER, Enactment/Reroute) -- public consultation (Phillip):
 "I uprooted my life and moved from the Sunshine Coast to Melbourne with
 some of my strongest reasoning being the ability to use public transport,
 ride a bike around and use a car as little as possible."
--> Directs present practice toward a different, broader preferred
-future, with no functional advocacy/question/rejection/contestation move
-directed at another actor: ENACTMENT / REROUTE / EXPANDER.
+-> ENACTMENT / REROUTE / EXPANDER.
 
 ====================================================================
 G. PRIMARY AND SECONDARY CLASSIFICATIONS
@@ -527,17 +434,13 @@ G. PRIMARY AND SECONDARY CLASSIFICATIONS
 Return ONE dominant classification (main_activity, activity_subtype,
 main_orientation) determined via the Decision Procedure (Section E).
 
-The calling application will indicate, for each request, whether
-secondary classifications are permitted. When permitted, return UP TO TWO
+The calling application will indicate whether secondary classifications
+are permitted for a given request. When permitted, return UP TO TWO
 secondary classifications ONLY when the comment contains a SUBSTANTIVELY
 DISTINCT performance of a second activity -- one that stands on its own
 and is not simply the evidence mobilized to perform the dominant
-Negotiation move. Evaluation-sounding content that only serves as
-rhetorical support for an Advocate, Question, Reject, or Contest move is
-NOT a substantively distinct secondary Evaluation -- it is part of the
-dominant Negotiation performance and must not be listed separately. When
-secondary classifications are NOT permitted for a request, always return
-an empty list for secondary_classifications.
+Negotiation move. When secondary classifications are NOT permitted,
+always return an empty list.
 
 ====================================================================
 H. WHAT NOT TO DO
@@ -545,17 +448,20 @@ H. WHAT NOT TO DO
 
 Do NOT determine or output any future-making challenge (Convoluted
 Evaluations, Confrontational Negotiations, or Competing Enactments) or any
-Fragile Futures assessment for a single comment -- these are emergent,
-exchange-level outcomes determined by the calling application across
-multiple comments, never by you for one comment.
+Fragile Futures assessment for a single comment. The paper defines these
+as emergent, qualitative conditions that arise only from patterns across
+linked discourse, practices, actors, touchpoints, or time, and that
+require human interpretation. This determination is never made by you for
+one comment; it is organized for human review by the calling application
+across multiple, linked comments.
 
 Do NOT generate policy or managerial recommendations, instruments, or
 evidence requirements -- these are provided by the calling application as
-fixed reference content.
+fixed reference content traceable to the manuscript and its Web
+Appendices.
 
 Do NOT introduce any interaction-type category, negotiation-evidence
-category, relational-positioning category, or named-address rule. Base
-your classification only on the functional definitions in Sections B-E.
+category, relational-positioning category, or named-address rule.
 
 ====================================================================
 OUTPUT FORMAT -- Return ONLY valid JSON
@@ -566,22 +472,22 @@ OUTPUT FORMAT -- Return ONLY valid JSON
 
   "main_activity": "EVALUATION, NEGOTIATION, or ENACTMENT",
   "activity_subtype": "SIMPLIFY, STALL, AVOID, COMPLEXIFY, ADVOCATE, QUESTION, REJECT, CONTEST, ACCELERATE, DELAY, PREVENT, REROUTE",
-  "activity_rationale": "Apply the Decision Procedure (Section E) explicitly: state whether the comment's overarching function is to Advocate/Question/Reject/Contest, citing specific phrases, BEFORE considering volume of evaluative content. If the comment contains substantial technical/evaluative content mobilized in service of a negotiating move, say so explicitly and explain why Negotiation remains dominant.",
+  "activity_rationale": "Apply the Decision Procedure explicitly, citing specific phrases from the FOCAL comment. If the comment mixes evaluative and negotiating content, state explicitly why the dominant function is Negotiation, Evaluation, or Enactment.",
 
   "main_orientation": "CATALYZER, AMBIVALENT, RESISTANT, or EXPANDER",
-  "orientation_rationale": "The configuration of narrative, goal, emotion, temporality, and practice implications (Section C) that supports this orientation",
+  "orientation_rationale": "The configuration of narrative, goal, emotion, temporality, and practice implications that supports this orientation",
 
   "secondary_classifications": [
     {"activity": "...", "activity_subtype": "...", "orientation": "...", "rationale": "..."}
   ],
 
-  "narrative_identified": "Name of the dominant narrative from Section C",
+  "narrative_identified": "Name of the dominant narrative",
   "emotions_identified": "Comma-separated list of emotions evidenced in the comment",
-  "temporality_identified": "How the comment expresses temporality, per Section C",
-  "notable_conditions_of_adoption": "Which notable condition of adoption (Section C) is evidenced, if any",
+  "temporality_identified": "How the comment expresses temporality",
+  "notable_conditions_of_adoption": "Which notable condition of adoption is evidenced, if any",
 
   "supporting_text": "The specific phrase(s) from the FOCAL comment that support the classification",
-  "context_note": "Brief note on how the supplied context (if any) helped interpret the focal comment's relation to another position, claim, or pathway -- leave empty if no context was supplied or used",
+  "context_note": "Brief note on how the supplied context (if any) helped interpret the focal comment -- leave empty if no context was supplied or used",
   "input_scope_warning": "Non-empty only if the input appears to mix content from multiple distinguishable speakers that cannot be cleanly separated"
 }
 """
@@ -608,134 +514,457 @@ ORIENTATIONS = {
         "color": "#C0392B", "bg": "#FDEDEC", "border": "#E74C3C",
         "goal": "Contest the prescribed future, protect the status quo",
         "narrative": "Control Narrative",
-        "temporality": "The future is distant -- there will be no change",
+        "temporality": "The future is distant -- no change",
         "activities": "Avoid - Reject - Prevent",
     },
     "EXPANDER": {
         "color": "#7D3C98", "bg": "#F4ECF7", "border": "#9B59B6",
-        "goal": "Expand the prescribed future (magnitude of change), propose new pathways and alternative futures",
+        "goal": "Expand the prescribed future, propose new pathways and alternative futures",
         "narrative": "Bigger Picture Narrative",
-        "temporality": "The future is distant -- change will be broader",
+        "temporality": "The future is distant -- broader change",
         "activities": "Complexify - Contest - Reroute",
     }
 }
 
 ACTIVITY_META = {
     "EVALUATION":  {"color": "#2980B9", "bg": "#EBF5FB",
-        "definition": "Consumers' cognitive assessment of the prescribed future.",
+        "definition": "References to how consumers made sense of the prescribed future.",
         "subtypes": {"SIMPLIFY": "CATALYZER", "STALL": "AMBIVALENT", "AVOID": "RESISTANT", "COMPLEXIFY": "EXPANDER"}},
     "NEGOTIATION": {"color": "#E67E22", "bg": "#FEF9E7",
         "definition": "The activity through which consumers attempt to shape collective trajectories toward a preferred future.",
         "subtypes": {"ADVOCATE": "CATALYZER", "QUESTION": "AMBIVALENT", "REJECT": "RESISTANT", "CONTEST": "EXPANDER"}},
     "ENACTMENT":   {"color": "#8E44AD", "bg": "#F5EEF8",
-        "definition": "What consumers do in the present to materialize a preferred future.",
+        "definition": "References to how consumers gave form to futures through imagined, planned, or actual changes in everyday practices.",
         "subtypes": {"ACCELERATE": "CATALYZER", "DELAY": "AMBIVALENT", "PREVENT": "RESISTANT", "REROUTE": "EXPANDER"}},
 }
 
+# ─────────────────────────────────────────
+# FUTURE-MAKING CHALLENGES (Discussion section + Web Appendix E, Step 3)
+# Corpus-level only. Never inferred from a single comment.
+# ─────────────────────────────────────────
 CHALLENGE_DEFINITIONS = {
     "CONVOLUTED_EVALUATIONS": {
         "label": "Convoluted Evaluations", "activity": "EVALUATION",
         "definition": (
-            "Arise from the interplay among Simplify, Stall, Avoid, and "
-            "Complexify performances, supported by different and often "
-            "clashing narratives and emotions."
+            "Arise as consumers evaluate the prescribed future with more or "
+            "less certainty and thoroughness. When consumers evaluate the "
+            "prescribed future through divergent assumptions, evidence, and "
+            "temporal horizons, evaluations become convoluted."
         )
     },
     "CONFRONTATIONAL_NEGOTIATIONS": {
         "label": "Confrontational Negotiations", "activity": "NEGOTIATION",
         "definition": (
-            "Arise when consumers Advocate, Question, Reject, and Contest "
-            "preferred futures without conceding to alternative ones."
+            "Arise as consumers negotiate their preferred futures. When "
+            "consumers simultaneously advocate for, question, reject, or "
+            "contest the prescribed future in relation to others without "
+            "conceding to alternatives, negotiations become confrontational."
         )
     },
     "COMPETING_ENACTMENTS": {
         "label": "Competing Enactments", "activity": "ENACTMENT",
         "definition": (
-            "Arise when consumers Accelerate, Delay, Prevent, and Reroute "
-            "different preferred futures through their current practices."
+            "Arise as consumers enact different preferred futures through "
+            "their current practices. When consumers accelerate, delay, "
+            "prevent, or re-route the prescribed future through present "
+            "practices, enactments become competitive."
         )
     },
 }
 FRAGILE_FUTURES_DEFINITION = (
     "Fragile Futures: multiple, volatile, and conflicting preferred futures "
-    "that may interfere with the actualization of the prescribed one."
+    "that may interfere with the actualization of the prescribed one. "
+    "Fragile Futures is a qualitative theoretical condition produced by "
+    "differently oriented performances interfering with one another across "
+    "evaluation, negotiation, and enactment -- it is NOT an automatic "
+    "score, probability, or single-comment classification. Diagnosing it "
+    "requires human interpretation of patterns across linked discourse, "
+    "practices, actors, touchpoints, or time."
 )
 
-# Internal-only constants -- used solely for hidden benchmark examples in
-# Advanced / Developer Tools, never shown as presets in the normal flow.
+# ─────────────────────────────────────────
+# STATIC ROADMAPS -- domain-neutral wording drawn verbatim/near-verbatim
+# from the manuscript's "Recommendations for policymakers" and
+# "Recommendations for managerial practitioners" sections. Never
+# generated by the LLM. 7 recursive policy steps, 6 recursive managerial
+# steps, matching Web Appendix Tables WE1/WE2 step titles exactly.
+# ─────────────────────────────────────────
+POLICY_ROADMAP_STEPS = [
+    ("1", "Determine the prescribed future",
+     "Determine the future prescribed by the intervention and what it "
+     "means for existing consumer practices. Map the elements of "
+     "consumers' practices likely to be disrupted, establish the key "
+     "responsibilities for the change, determine potential emotional "
+     "manifestations, and identify links to other practices (drawing on "
+     "Gonzalez-Arcos et al. 2021)."),
+    ("2", "Conduct social listening to map future-making orientations",
+     "Monitor initial responses and map consumers' future-making "
+     "orientations (Catalyzer, Ambivalent, Resistant, Expander), focusing "
+     "on how consumers approach evaluation, negotiation, and enactment of "
+     "the prescribed or preferred futures. Conduct social listening, "
+     "tracking and analyzing conversations (e.g., social media, public "
+     "consultations), and look for language in consumer discourse that "
+     "maps onto different future-making orientations, including "
+     "discussions of trials, early adoption, hesitance, or resistance."),
+    ("3", "Diagnose and monitor key future-making challenges",
+     "Diagnose the future-making challenges emerging from different "
+     "performances of future-making activities across orientations, "
+     "using evidence from social listening. This diagnosis requires "
+     "identifying patterns across linked discourse and practices, not a "
+     "single comment or response."),
+    ("4", "Implement support initiatives",
+     "Determine support measures, and monitor and adjust their "
+     "implementation by aligning measures with future-making orientations. "
+     "Allow for plural futures while strengthening their cohesiveness and "
+     "facilitating coexistence, drawing on the value each orientation "
+     "offers."),
+    ("5", "Facilitate enactment",
+     "Determine how best to support consumers in their enactment of "
+     "present practices, acknowledging multiple pathways toward preferred "
+     "futures. Provide the infrastructure and capabilities consumers need "
+     "to navigate the required practice changes, remaining responsive to "
+     "the diagnostic steps."),
+    ("6", "Measure multiple outcomes",
+     "Measure how the future-focused intervention is progressing."),
+    ("7", "Revise the intervention",
+     "Continuously revise the intervention, providing more support as "
+     "needed."),
+]
+
+MANAGER_ROADMAP_STEPS = [
+    ("1", "Determine the prescribed future",
+     "Identify the future prescribed by the intervention, similar to Step "
+     "1 of the policymaking roadmap."),
+    ("2", "Conduct social listening to consider future-making orientations",
+     "Conduct social listening to consider future-making orientations, "
+     "similar to Step 2 of the policymaking roadmap, for the purpose of "
+     "supporting consumers through the change."),
+    ("3", "Monitor key future-making challenges",
+     "Monitor emergent future-making challenges, similar to Step 3 of the "
+     "policymaking roadmap, for the purpose of supporting consumers "
+     "through the change. This requires identifying patterns across "
+     "linked discourse and practices, not a single comment or response."),
+    ("4", "Select an orientation-sensitive response",
+     "Select orientation-sensitive support interventions, identifying key "
+     "actions to avoid when developing support mechanisms. The aim is not "
+     "to convert all consumers into Catalyzers, but to reduce future-"
+     "making challenges while supporting multiple feasible pathways."),
+    ("5", "Match messaging to key future-making challenges",
+     "Select messaging strategies to keep consumers informed of the "
+     "required change, its benefits, and the available support, ensuring "
+     "one orientation is not mobilized while others are alienated."),
+    ("6", "Support consumers through enactment",
+     "Support consumers at multiple touchpoints in their journey, "
+     "ensuring a positive experience on their pathway toward the "
+     "preferred future. Anticipate how consumers evaluate, negotiate, and "
+     "enact futures at different touchpoints, drawing parallels with "
+     "customer journey mapping and scenario planning (e.g., Kaplan and "
+     "Orlikowski 2013)."),
+]
+
+# ─────────────────────────────────────────
+# ORIENTATION-SENSITIVE GUIDANCE -- domain-neutral, drawn from the main
+# text ("Recommendations for policymakers/managerial practitioners") and
+# from the generic (non-AI-specific) theoretical sentences in Web
+# Appendix Tables WE1/WE2. Fixed reference text; never generated by the
+# LLM. Orientations are treated as diagnostic patterns, not segments.
+# ─────────────────────────────────────────
+POLICY_ORIENTATION_GUIDANCE = {
+    "CATALYZER": {
+        "implications": (
+            "Consumers adopting a Catalyzer orientation may describe the "
+            "prescribed future as desirable, inevitable, and already "
+            "underway. They may simplify evaluation of possible trade-offs, "
+            "advocate for wider adoption, and readily enact the prescribed "
+            "practices. Their experiences can reveal what currently "
+            "facilitates enactment, but should not be treated as evidence "
+            "that other consumers can or should follow the same pathway."
+        ),
+        "action": (
+            "Monitor urgency and inevitability narratives, simplified "
+            "evaluations, advocacy, and early adoption. Leverage Catalyzer "
+            "enthusiasm to help normalize movement toward the prescribed "
+            "future (e.g., through word-of-mouth and testimonials), while "
+            "avoiding the use of early uptake to frame wider expansion as "
+            "inevitable."
+        ),
+    },
+    "AMBIVALENT": {
+        "implications": (
+            "Consumers adopting an Ambivalent orientation may consider the "
+            "prescribed future potentially beneficial while regarding "
+            "particular conditions as unresolved. They may continue "
+            "evaluating, ask questions, accept it conditionally, or delay "
+            "enactment until it becomes compatible with their routines."
+        ),
+        "action": (
+            "Identify the particular condition underlying hesitation (e.g., "
+            "affordability, infrastructure readiness, compatibility with "
+            "established practices) and direct support toward that "
+            "condition. Ambivalence can play a constructive role by "
+            "prompting reflection, surfacing weak points, and demanding "
+            "stronger infrastructure before large-scale adoption, leading "
+            "to more stable adoption of the prescribed future."
+        ),
+    },
+    "RESISTANT": {
+        "implications": (
+            "Consumers adopting a Resistant orientation may frame the "
+            "prescribed future as coercive, inequitable, or threatening to "
+            "autonomy, identity, or established practices. They may avoid "
+            "evaluating it, categorically reject it, or seek to prevent "
+            "its enactment."
+        ),
+        "action": (
+            "Examine future-making from a Resistant orientation to gain "
+            "valuable insight into consumers' reasons for pushback. Monitor "
+            "narratives of control, distrust, and loss of choice, along "
+            "with refusals, complaints, or continued reliance on existing "
+            "practices, to identify what consumers' resistance seeks to "
+            "protect before determining the appropriate response."
+        ),
+    },
+    "EXPANDER": {
+        "implications": (
+            "Consumers adopting an Expander orientation may argue that the "
+            "intervention addresses a narrowly framed problem while "
+            "leaving broader problems unresolved. They may propose and "
+            "enact preferred futures centered on more systemic pathways."
+        ),
+        "action": (
+            "The Expander orientation broadens the scope of envisioned "
+            "change, encouraging systemic innovations that go beyond "
+            "immediate next steps and surfacing issues that may not have "
+            "been considered when designing the intervention, given its "
+            "closer attunement to the magnitude and systemic nature of "
+            "wicked problems. Examine the alternative pathways proposed."
+        ),
+    },
+}
+
+MANAGER_ORIENTATION_GUIDANCE = {
+    "CATALYZER": {
+        "implications": (
+            "Catalyzers simplify evaluation, advocate for the prescribed "
+            "future, and accelerate enactment. Their enthusiasm can "
+            "normalize new practices but may obscure the resources and "
+            "competencies that supported early adoption."
+        ),
+        "action": (
+            "Monitor urgency and inevitability language, advocacy, "
+            "referrals, and rapid adoption. Use early adopters' "
+            "experiences while documenting the conditions and limitations "
+            "of their enactment. Avoid presenting their experiences as "
+            "representative or as evidence that adoption is inevitable."
+        ),
+    },
+    "AMBIVALENT": {
+        "implications": (
+            "Ambivalent consumers see potential value but regard "
+            "particular conditions as unresolved. They stall evaluation, "
+            "question the future, and delay enactment. Their hesitation "
+            "can identify addressable barriers rather than generalized "
+            "opposition."
+        ),
+        "action": (
+            "Monitor conditional language, repeated comparison, requests "
+            "for evidence or assistance, trials without continuation, and "
+            "abandoned onboarding. Identify the specific unresolved "
+            "condition rather than treating hesitation as generalized "
+            "uncertainty. Avoid pressure, artificial urgency, and framing "
+            "hesitation as ignorance."
+        ),
+    },
+    "RESISTANT": {
+        "implications": (
+            "Resistant consumers perceive threats to autonomy, identity, "
+            "rights, or established practices. They avoid evaluation, "
+            "reject the prescribed future, and seek to prevent enactment."
+        ),
+        "action": (
+            "Monitor language concerning surveillance, loss of choice, and "
+            "distrust. Provide clear disclosure, meaningful opportunities "
+            "to ask questions, human assistance, and workable complaint or "
+            "escalation routes. Avoid \"there is no alternative\" "
+            "messaging, ridicule, and hidden automation."
+        ),
+    },
+    "EXPANDER": {
+        "implications": (
+            "Expanders complexify evaluation, contest the prescribed "
+            "future, and reroute enactment toward broader alternatives. "
+            "Their critique may reveal broader value propositions and "
+            "alternative or complementary service pathways."
+        ),
+        "action": (
+            "Monitor claims that the intervention does not solve the "
+            "underlying problem, advocacy for collective alternatives, and "
+            "participation in alternative services. Invite consumers to "
+            "articulate broader or alternative preferred futures. Avoid "
+            "presenting the offering as a complete solution or dismissing "
+            "systemic critique as outside the firm's responsibility."
+        ),
+    },
+}
+
+# ─────────────────────────────────────────
+# CHALLENGE-SENSITIVE ACTIONS (Requirement 7) -- domain-neutral,
+# generalized from Web Appendix E Step-3 content, kept consistent with
+# the discussion section of the main text. Fixed; never LLM-generated.
+# ─────────────────────────────────────────
+CHALLENGE_POLICY_ACTIONS = {
+    "CONVOLUTED_EVALUATIONS": (
+        "Identify incompatible evidence, assumptions, or temporal horizons "
+        "underlying divergent evaluations, and support shared sensemaking "
+        "(e.g., a shared assessment covering accuracy, trade-offs, and "
+        "distributional effects) rather than treating one evaluation as "
+        "simply correct and others as misinformed."
+    ),
+    "CONFRONTATIONAL_NEGOTIATIONS": (
+        "Create legitimate and accessible opportunities for comparison, "
+        "questioning, contestation, and negotiation among consumers. "
+        "Reconsider the intervention's framing or support measures when "
+        "conflict escalates, rather than relying on stronger one-way "
+        "persuasion or presenting the prescribed future as inevitable."
+    ),
+    "COMPETING_ENACTMENTS": (
+        "Identify how consumers' current practices accelerate, delay, "
+        "prevent, or re-route the prescribed future. Determine whether "
+        "these pathways can coexist or interfere with one another, and "
+        "coordinate support across viable pathways without treating every "
+        "divergence from the prescribed practice as noncompliance."
+    ),
+}
+
+CHALLENGE_MANAGER_ACTIONS = {
+    "CONVOLUTED_EVALUATIONS": (
+        "Monitor how consumers assess the feasibility and desirability of "
+        "the prescribed future at relevant touchpoints. Relevant "
+        "indicators include contradictory claims, unresolved questions, "
+        "repeated comparison, requests for evidence, abandoned onboarding, "
+        "and gaps between organizational claims and consumer experience."
+    ),
+    "CONFRONTATIONAL_NEGOTIATIONS": (
+        "Monitor exchanges in which consumers defend preferred futures, "
+        "respond to competing claims, or attempt to influence collective "
+        "trajectories. Indicators include advocacy, persistent questioning, "
+        "explicit rejection, systemic contestation, polarized discussion, "
+        "and disputes over autonomy or legitimacy."
+    ),
+    "COMPETING_ENACTMENTS": (
+        "Monitor what consumers do in the present, including rapid "
+        "adoption, trials without continuation, delayed use, refusals, "
+        "continued reliance on existing practices, and movement toward "
+        "alternative pathways. These present practices provide evidence of "
+        "the preferred futures consumers are enacting."
+    ),
+}
+
+CROSS_ORIENTATION_NOTE = (
+    "Cross-orientation interference check: a response tailored to one "
+    "orientation may intensify a challenge for another -- for example, an "
+    "evidence campaign that reassures Ambivalent consumers may deepen "
+    "Resistant distrust if it ignores autonomy, or reinforce Expander "
+    "critique if it presents the intervention as a complete solution. "
+    "Check for such spillover before finalizing a response."
+)
+
+# ─────────────────────────────────────────
+# AI-INTEGRATED HEALTHCARE ILLUSTRATION -- verbatim/near-verbatim from
+# Web Appendix E (Tables WE1/WE2, "Application to AI-integrated
+# healthcare" column). Presented as an ILLUSTRATION of transferability
+# to an Open, broad-scope, comparatively low-prescription intervention,
+# applied separately to concrete AI-mediated practices. This is NOT
+# empirical validation and is never mixed into the domain-neutral
+# guidance above.
+# ─────────────────────────────────────────
+AI_HEALTHCARE_INTRO = (
+    "Illustration only -- not empirical validation. The manuscript treats "
+    "AI-integrated healthcare as an Open intervention: broad in scope, "
+    "comparatively low in prescriptiveness, arising primarily from "
+    "technological and societal developments rather than a single policy "
+    "goal, with multiple possible trajectories and no predefined societal "
+    "outcome. The roadmaps below are illustrated separately for concrete "
+    "AI-mediated practices -- e.g., AI-supported triage, diagnostic tools, "
+    "AI-enabled devices, robotic-assisted surgery, mental-health "
+    "applications, and predictive risk-scoring systems -- because "
+    "different applications can prescribe very different practice changes "
+    "for patients."
+)
+
+AI_HEALTHCARE_ORIENTATION_ILLUSTRATION = {
+    "CATALYZER": (
+        "\"AI is already more accurate than humans and will inevitably "
+        "improve healthcare.\" Example action: authorize a bounded "
+        "AI-triage pilot in selected primary-care services, requiring "
+        "comparison with clinician-led triage and reporting by age, "
+        "language, disability, ethnicity, and digital access, so that "
+        "reduced waiting time in one channel is not assumed to generalize "
+        "or to displace care elsewhere."
+    ),
+    "AMBIVALENT": (
+        "\"AI could be valuable, but I need stronger evidence and clearer "
+        "safeguards.\" Example: a patient may be willing to use an "
+        "AI-supported tool only under specified conditions -- policymakers "
+        "and managers should investigate those conditions rather than "
+        "assume hesitation reflects generalized resistance to innovation."
+    ),
+    "RESISTANT": (
+        "\"AI is a tool for surveillance, cost reduction, and a poor "
+        "replacement for expert judgment.\" Example action: prohibit fully "
+        "automated denial of essential care and require an identifiable "
+        "professional who can review, override, and accept responsibility "
+        "for a decision."
+    ),
+    "EXPANDER": (
+        "\"A more efficient algorithm does not solve unequal access to "
+        "healthcare.\" Example: patients may argue that faster AI-"
+        "supported triage does not resolve workforce shortages, unequal "
+        "access, or inadequate preventative care, and may advocate for "
+        "community clinics, multilingual services, or more clinicians -- "
+        "AI should be framed as one possible component of healthcare "
+        "transformation rather than the complete solution."
+    ),
+}
+
+AI_HEALTHCARE_CHALLENGE_ILLUSTRATION = {
+    "CONVOLUTED_EVALUATIONS": (
+        "Patients may stall while seeking evidence of human review; some "
+        "may avoid evaluation because they distrust the institution; "
+        "community groups may complexify evaluation by adding equity and "
+        "downstream-access consequences. Policymakers could establish a "
+        "shared assessment covering accuracy, false classifications, "
+        "subgroup performance, patient comprehension, and actual access to "
+        "care."
+    ),
+    "CONFRONTATIONAL_NEGOTIATIONS": (
+        "Confrontation may emerge between preferred futures centered on "
+        "rapid AI integration, conditional use, human-led care, or "
+        "broader healthcare-system transformation. Policymakers could "
+        "create legitimate and accessible opportunities for patients to "
+        "compare and negotiate the scope of specific AI applications."
+    ),
+    "COMPETING_ENACTMENTS": (
+        "Some patients may readily use an AI-mediated pathway, others may "
+        "delay or refuse it, and others may seek human-first or "
+        "alternative services. These present practices accelerate, delay, "
+        "prevent, or reroute AI integration and may produce competing "
+        "healthcare futures that require coordinated, not uniform, "
+        "support."
+    ),
+}
+
+# ─────────────────────────────────────────
+# BENCHMARK EXAMPLES -- hidden from normal workflows; used only inside
+# Advanced / Developer Tools for the Coding Consistency Check.
+# ─────────────────────────────────────────
 PF_EV = (
     "Transition all vehicles to Zero Emission Vehicles (EVs) to achieve Australia's "
     "net-zero emissions targets, as prescribed by Australia's National Electric "
     "Vehicle Strategy (2023)"
 )
 
-# ─────────────────────────────────────────
-# STATIC ROADMAPS (verbatim step names from the manuscript) -- never
-# generated by the LLM.
-# ─────────────────────────────────────────
-POLICY_ROADMAP_STEPS = [
-    ("1", "Determine the prescribed future",
-     "Define the future the intervention prescribes, the practice changes on which its "
-     "public value depends, and which populations may lack the resources to enact it."),
-    ("2", "Map future-making orientations",
-     "Triangulate discourse with behavior; analyze by application/decision context."),
-    ("3", "Diagnose key future-making challenges",
-     "Identify which of Convoluted Evaluations, Confrontational Negotiations, or "
-     "Competing Enactments is most pressing; the three activities are interdependent, "
-     "not sequential."),
-    ("4", "Implement support initiatives",
-     "Match support measures to future-making orientations."),
-    ("5", "Facilitate enactment",
-     "Provide the infrastructure and capabilities required to reconfigure practices "
-     "safely and equitably."),
-    ("6", "Measure multiple outcomes",
-     "Measure how the intervention is progressing across multiple outcomes."),
-    ("7", "Revise the intervention",
-     "Continuously revise the intervention, providing more support as needed."),
-]
-
-MANAGER_ROADMAP_STEPS = [
-    ("1", "Determine the prescribed future",
-     "Define the intervention through the future it asks consumers to enact."),
-    ("2", "Consider future-making orientations",
-     "Treat orientations as a diagnostic lens, not fixed consumer segments."),
-    ("3", "Monitor key future-making challenges",
-     "Build a future-making customer journey combining discursive, experiential, "
-     "and behavioral evidence."),
-    ("4", "Select an orientation-sensitive response",
-     "Match responses to the orientations identified in the data."),
-    ("5", "Match messaging to key future-making challenges",
-     "Communicate achievements alongside uncertainty, trade-offs, and limitations."),
-    ("6", "Support consumers through enactment",
-     "Place support at touchpoints where practices change."),
-]
-
-POLICY_ORIENTATION_REFERENCE = {
-    "CATALYZER": "Time-limited sandboxes, independent evaluation, mandatory failure reporting, predefined thresholds for expansion/withdrawal.",
-    "AMBIVALENT": "Impact assessments, staged authorization, sunset clauses, public registers, guaranteed alternative pathways.",
-    "RESISTANT": "Protect human-review and appeal rights, prohibit unacceptable uses, independent audits, moratoria where evidence is insufficient.",
-    "EXPANDER": "Deliberative forums, broader impact assessment, fund complementary pathways, citizen assemblies, data trusts, alternative governance models.",
-}
-MANAGER_ORIENTATION_REFERENCE = {
-    "CATALYZER": "Governed pilots, peer learning, documentation, limitation reporting. Avoid inevitability claims and treating early adopters as representative.",
-    "AMBIVALENT": "Comparison tools, staged adoption, transparent evidence, training, human assistance. Avoid artificial urgency and framing hesitation as ignorance.",
-    "RESISTANT": "Consultation, opt-outs, human review, audits, appeals, harm protections. Avoid 'there is no alternative' messaging, ridicule, hidden automation.",
-    "EXPANDER": "Participatory design, futures workshops, broader-impact evaluation, partnerships, alternative governance/service models. Avoid presenting the offering as complete or dismissing critique.",
-}
-CROSS_ORIENTATION_NOTE = (
-    "Cross-orientation interference check: check whether a response "
-    "tailored to one orientation intensifies fragility elsewhere."
-)
-
-# ─────────────────────────────────────────
-# BENCHMARK EXAMPLES -- hidden from normal workflows; used only inside
-# Advanced / Developer Tools for the Coding Consistency Check.
-# Includes manuscript-grounded Negotiation tests plus retained Evaluation
-# controls, so improving Negotiation recall does not push every comment
-# toward Negotiation.
-# ─────────────────────────────────────────
 EXAMPLES = {
-    # --- Evaluation controls (retained) ---
     "CONTROL | Evaluation -> Stall (Clara)": {
         "prescribed": PF_EV, "activity": "EVALUATION", "subtype": "STALL", "orientation": "AMBIVALENT",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
@@ -797,8 +1026,6 @@ EXAMPLES = {
             "possible."
         )
     },
-
-    # --- Manuscript-grounded Negotiation tests (Section 12 of the request) ---
     "NEGOTIATION | Advocate/Catalyzer (Joe)": {
         "prescribed": PF_EV, "activity": "NEGOTIATION", "subtype": "ADVOCATE", "orientation": "CATALYZER",
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
@@ -915,8 +1142,7 @@ EXAMPLES = {
 }
 
 # ─────────────────────────────────────────
-# CONSISTENCY SAFEGUARD -- enforce the mandatory orientation x subtype
-# pairing table for main and secondary classifications
+# CONSISTENCY SAFEGUARD
 # ─────────────────────────────────────────
 
 def get_secondary_classifications(result: dict) -> list:
@@ -983,7 +1209,7 @@ def enforce_context_metadata(result: dict, context_available: bool, context_type
 
 
 # ─────────────────────────────────────────
-# CORE FUNCTION -- focal comment + context, paper-grounded schema only
+# CORE FUNCTION -- focal comment + context
 # ─────────────────────────────────────────
 
 def analyze_comment(prescribed_future: str, focal_text: str, context_text: str = "",
@@ -1023,14 +1249,10 @@ SECONDARY CLASSIFICATIONS FOR THIS REQUEST: {secondary_instruction}
 
 Apply the Decision Procedure in Section E, in order. FIRST ask whether the
 focal comment's overarching function is to Advocate, Question, Reject, or
-Contest a collective trajectory (Section B) -- do this BEFORE considering
-how much of the comment reads as technical, factual, or evaluative in
-isolation. If the comment mobilizes assessments, predictions, or personal
-experience in service of such a function, Negotiation is dominant, per
-the functional-dominance rule. Only if no such function is present should
-you consider Enactment, and only if neither applies should you classify
-Evaluation. Verify the activity_subtype belongs to the valid pairing row
-for its own orientation (Section D) before responding. Do not produce any
+Contest a collective trajectory -- do this BEFORE considering how much of
+the comment reads as technical, factual, or evaluative in isolation.
+Verify the activity_subtype belongs to the valid pairing row for its own
+orientation (Section D) before responding. Do not produce any
 future-making challenge, Fragile Futures assessment, or policy/managerial
 recommendation -- these are outside your task.
 """
@@ -1052,11 +1274,10 @@ recommendation -- these are outside your task.
 
 
 def run_consistency_suite(api_key: str) -> dict:
-    """Tests whether the current prompt reproduces predetermined coding
-    decisions for benchmark examples paraphrased/quoted from the
-    manuscript. This is an internal consistency check -- it does NOT
-    constitute empirical validation, intercoder reliability, or evidence
-    of generalizability."""
+    """Internal consistency check against benchmark examples quoted or
+    paraphrased from the manuscript's dataset. Does NOT constitute
+    empirical validation, intercoder reliability, or evidence of
+    generalizability."""
     results = []
     for name, ex in EXAMPLES.items():
         try:
@@ -1106,26 +1327,130 @@ def run_consistency_suite(api_key: str) -> dict:
         return {"results": [], "overall_agreement": 0.0}
 
     n = len(results)
-    overall_activity_agreement = sum(r["activity_match"] for r in results) / n
-    overall_subtype_agreement = sum(r["subtype_match"] for r in results) / n
-    overall_orientation_agreement = sum(r["orientation_match"] for r in results) / n
-    overall_agreement = sum(r["match"] for r in results) / n
-
-    negotiation_examples = [r for r in results if r["expected"][1] == "NEGOTIATION"]
-    negotiation_recall = (
-        sum(r["activity_match"] for r in negotiation_examples) / len(negotiation_examples)
-        if negotiation_examples else None
-    )
-
     return {
         "results": results,
-        "overall_agreement": overall_agreement,
-        "overall_activity_agreement": overall_activity_agreement,
-        "overall_subtype_agreement": overall_subtype_agreement,
-        "overall_orientation_agreement": overall_orientation_agreement,
-        "negotiation_recall": negotiation_recall,
-        "n_negotiation_examples": len(negotiation_examples),
+        "overall_agreement": sum(r["match"] for r in results) / n,
+        "overall_activity_agreement": sum(r["activity_match"] for r in results) / n,
+        "overall_subtype_agreement": sum(r["subtype_match"] for r in results) / n,
+        "overall_orientation_agreement": sum(r["orientation_match"] for r in results) / n,
     }
+
+
+# ─────────────────────────────────────────
+# FRAMEWORK VALIDATION -- structural tests for requirement 12.
+# These are code-level checks, not LLM calls.
+# ─────────────────────────────────────────
+
+REQUIRED_ORIENTATIONS = {"CATALYZER", "AMBIVALENT", "RESISTANT", "EXPANDER"}
+REQUIRED_SUBTYPES = {
+    "EVALUATION": {"SIMPLIFY", "STALL", "AVOID", "COMPLEXIFY"},
+    "NEGOTIATION": {"ADVOCATE", "QUESTION", "REJECT", "CONTEST"},
+    "ENACTMENT": {"ACCELERATE", "DELAY", "PREVENT", "REROUTE"},
+}
+REQUIRED_CHALLENGES = {"CONVOLUTED_EVALUATIONS", "CONFRONTATIONAL_NEGOTIATIONS", "COMPETING_ENACTMENTS"}
+UNSUPPORTED_TERMS = [
+    "sandbox", "citizen assembly", "data trust", "moratoria", "moratorium",
+    "governed pilot", "deliberative forum", "competition policy",
+]
+EXPECTED_OUTPUT_SCHEMA_KEYS = [
+    "prescribed_future_acknowledged", "main_activity", "activity_subtype",
+    "activity_rationale", "main_orientation", "orientation_rationale",
+    "secondary_classifications", "narrative_identified", "emotions_identified",
+    "temporality_identified", "notable_conditions_of_adoption",
+    "supporting_text", "context_note", "input_scope_warning",
+]
+
+
+def run_framework_validation() -> list:
+    """Returns a list of (test_name, passed: bool, detail: str) tuples.
+    Pure code-level structural checks -- no API calls."""
+    tests = []
+
+    tests.append((
+        "Exactly 4 future-making orientations",
+        set(ORIENTATIONS.keys()) == REQUIRED_ORIENTATIONS,
+        f"Found: {sorted(ORIENTATIONS.keys())}"
+    ))
+
+    for act, expected_subs in REQUIRED_SUBTYPES.items():
+        actual_subs = set(ACTIVITY_META.get(act, {}).get("subtypes", {}).keys())
+        tests.append((
+            f"{act} has exactly the 4 manuscript performances",
+            actual_subs == expected_subs,
+            f"Found: {sorted(actual_subs)}"
+        ))
+
+    tests.append((
+        "Policy roadmap has exactly 7 recursive steps",
+        len(POLICY_ROADMAP_STEPS) == 7,
+        f"Found: {len(POLICY_ROADMAP_STEPS)}"
+    ))
+    tests.append((
+        "Managerial roadmap has exactly 6 recursive steps",
+        len(MANAGER_ROADMAP_STEPS) == 6,
+        f"Found: {len(MANAGER_ROADMAP_STEPS)}"
+    ))
+
+    tests.append((
+        "Exactly 3 future-making challenges, correctly named",
+        set(CHALLENGE_DEFINITIONS.keys()) == REQUIRED_CHALLENGES,
+        f"Found: {sorted(CHALLENGE_DEFINITIONS.keys())}"
+    ))
+
+    policy_challenge_coverage = all(k in CHALLENGE_POLICY_ACTIONS for k in REQUIRED_CHALLENGES)
+    manager_challenge_coverage = all(k in CHALLENGE_MANAGER_ACTIONS for k in REQUIRED_CHALLENGES)
+    tests.append((
+        "Complete challenge-reference coverage (policy)",
+        policy_challenge_coverage,
+        f"Missing: {[k for k in REQUIRED_CHALLENGES if k not in CHALLENGE_POLICY_ACTIONS]}"
+    ))
+    tests.append((
+        "Complete challenge-reference coverage (managerial)",
+        manager_challenge_coverage,
+        f"Missing: {[k for k in REQUIRED_CHALLENGES if k not in CHALLENGE_MANAGER_ACTIONS]}"
+    ))
+
+    orientation_policy_coverage = all(o in POLICY_ORIENTATION_GUIDANCE for o in REQUIRED_ORIENTATIONS)
+    orientation_manager_coverage = all(o in MANAGER_ORIENTATION_GUIDANCE for o in REQUIRED_ORIENTATIONS)
+    tests.append((
+        "Complete orientation-reference coverage (policy)",
+        orientation_policy_coverage,
+        f"Missing: {[o for o in REQUIRED_ORIENTATIONS if o not in POLICY_ORIENTATION_GUIDANCE]}"
+    ))
+    tests.append((
+        "Complete orientation-reference coverage (managerial)",
+        orientation_manager_coverage,
+        f"Missing: {[o for o in REQUIRED_ORIENTATIONS if o not in MANAGER_ORIENTATION_GUIDANCE]}"
+    ))
+
+    all_guidance_text = " ".join(
+        [v["implications"] + " " + v["action"] for v in POLICY_ORIENTATION_GUIDANCE.values()]
+        + [v["implications"] + " " + v["action"] for v in MANAGER_ORIENTATION_GUIDANCE.values()]
+        + list(CHALLENGE_POLICY_ACTIONS.values())
+        + list(CHALLENGE_MANAGER_ACTIONS.values())
+    ).lower()
+    found_unsupported = [t for t in UNSUPPORTED_TERMS if t in all_guidance_text]
+    tests.append((
+        "Absence of unsupported recommendations/instruments",
+        len(found_unsupported) == 0,
+        f"Found unsupported terms: {found_unsupported}" if found_unsupported else "None found"
+    ))
+
+    schema_present = all(key in SYSTEM_PROMPT for key in EXPECTED_OUTPUT_SCHEMA_KEYS)
+    tests.append((
+        "Output schema keys preserved in system prompt",
+        schema_present,
+        f"Missing: {[k for k in EXPECTED_OUTPUT_SCHEMA_KEYS if k not in SYSTEM_PROMPT]}"
+    ))
+
+    tests.append((
+        "No single-comment challenge/Fragile-Futures output field exists",
+        not any(k in EXPECTED_OUTPUT_SCHEMA_KEYS for k in
+                ["future_making_challenge", "fragile_futures_score", "challenge_pathway"]),
+        "Confirmed absent from schema"
+    ))
+
+    return tests
 
 
 # ─────────────────────────────────────────
@@ -1138,10 +1463,6 @@ def has_comment_text_column(df: pd.DataFrame) -> bool:
 
 
 def strip_trailing_orientation_label(text: str) -> str:
-    """Removes manuscript-style parenthetical orientation labels (e.g.
-    '(Catalyzer Orientation)') from the end of a comment, so the expected
-    answer is not leaked to the model. Purely a text-cleaning step --
-    introduces no new theoretical construct."""
     cleaned = re.sub(
         r'\(\s*(Catalyzer|Ambivalent|Resistant|Expander)\s+Orientation\s*\)\.?\s*$',
         '', text, flags=re.IGNORECASE
@@ -1153,16 +1474,10 @@ USER_LABEL_PATTERN = re.compile(r'(?im)^\s*User\s*\d+\s*:\s*')
 
 
 def detect_user_labeled_exchange(text: str) -> int:
-    """Returns the count of 'User N:' style labels found in the text."""
     return len(USER_LABEL_PATTERN.findall(text or ""))
 
 
 def build_comment_records_from_user_labels(text: str) -> list:
-    """Parses manuscript-style exchanges where consecutive comments are
-    labeled 'User 1:', 'User 2:', etc. Assigns a shared technical
-    thread_id and preserves order; does NOT invent parent-reply
-    relationships (parent_comment_id stays None so build_context uses the
-    thread-window mechanism already in place for nearby comments)."""
     matches = list(USER_LABEL_PATTERN.finditer(text or ""))
     if len(matches) < 2:
         return []
@@ -1380,7 +1695,8 @@ def analyze_document(prepared_records: list, prescribed_future: str, api_key: st
 
 
 # ─────────────────────────────────────────
-# CORPUS-LEVEL AGGREGATION -- paper-grounded challenge review only
+# CORPUS-LEVEL AGGREGATION -- challenge review requires linked/multi-
+# comment patterns and explicit human interpretation; never automatic.
 # ─────────────────────────────────────────
 
 def compute_dominant_distributions(results: list) -> dict:
@@ -1406,11 +1722,16 @@ def compute_dominant_distributions(results: list) -> dict:
 
 
 def compute_challenge_review_candidates(results: list) -> dict:
+    """Flags LINKED comment pairs performing the SAME activity with
+    DIFFERENT orientation-specific performances, as candidates requiring
+    human interpretive review for the corresponding future-making
+    challenge. Never auto-diagnoses that the challenge occurred, never
+    scored, never converted into a percentage or a Fragile Futures
+    assessment."""
     valid = [r for r in results if r and "_error" not in r]
     by_id = {r.get("_comment_id"): r for r in valid if r.get("_comment_id")}
     candidates = {k: [] for k in CHALLENGE_DEFINITIONS}
 
-    # Linked parent-reply pairs (structured metadata)
     for r in valid:
         parent_id = r.get("_parent_comment_id")
         if not parent_id or parent_id not in by_id:
@@ -1436,9 +1757,8 @@ def compute_challenge_review_candidates(results: list) -> dict:
 def compute_same_thread_diversity(results: list) -> dict:
     """For comments sharing a thread_id without explicit parent-reply
     links (e.g., a manuscript-style labeled exchange), summarizes the
-    diversity of activities/orientations present within that thread. This
-    is descriptive only -- it does not claim an observed interaction or a
-    diagnosed challenge."""
+    diversity of performances present. Descriptive only -- does not claim
+    an observed interaction or a diagnosed challenge."""
     valid = [r for r in results if r and "_error" not in r]
     by_thread = {}
     for r in valid:
@@ -1546,6 +1866,41 @@ def render_pct_bars(counts: dict, meta_dict: dict, total: int):
         """, unsafe_allow_html=True)
 
 
+def render_challenge_sensitive_actions(candidates: dict, thread_summary: dict, n: int):
+    """Requirement 7/8: surface challenge-sensitive policy AND managerial
+    actions only for challenges that have at least one candidate pattern
+    (linked pairs or same-thread diversity) -- never unconditionally, and
+    never framed as a diagnosis."""
+    active_challenges = set()
+    for key, pairs in candidates.items():
+        if pairs:
+            active_challenges.add(key)
+    for tid, info in thread_summary.items():
+        distinct_activities = {k[0] for k in info["performance_counts"]}
+        for challenge_key, meta in CHALLENGE_DEFINITIONS.items():
+            if meta["activity"] in distinct_activities:
+                distinct_orientations = {k[2] for k in info["performance_counts"] if k[0] == meta["activity"]}
+                if len(distinct_orientations) >= 2:
+                    active_challenges.add(challenge_key)
+
+    if not active_challenges:
+        st.caption("No challenge-sensitive action references are surfaced because no candidate patterns were found in this sample.")
+        return
+
+    st.markdown("#### Challenge-Sensitive Actions (surfaced only for candidate patterns found above)")
+    st.caption(
+        "These are fixed, manuscript-grounded action references -- not "
+        "generated dynamically -- shown only for challenges with at least "
+        "one candidate pattern above. They require interpretive review, "
+        "not automatic implementation."
+    )
+    for key in active_challenges:
+        meta = CHALLENGE_DEFINITIONS[key]
+        with st.expander(f"{meta['label']} -- challenge-sensitive actions"):
+            st.markdown(f"**Policy action:** {CHALLENGE_POLICY_ACTIONS[key]}")
+            st.markdown(f"**Managerial action:** {CHALLENGE_MANAGER_ACTIONS[key]}")
+
+
 def show_document_summary(results: list, prescribed_future: str,
                            total_detected: int = None, sampling_description: str = ""):
     dist = compute_dominant_distributions(results)
@@ -1580,8 +1935,8 @@ def show_document_summary(results: list, prescribed_future: str,
     c4.metric("Without context", n_without_context)
     st.caption(
         "These percentages and counts describe the analyzed comments only. "
-        "They do not represent unique consumers, organizations, or "
-        "population prevalence, and results depend on the source material, "
+        "They do not represent unique consumers, patients, or population "
+        "prevalence, and results depend on the source material, "
         "segmentation, and selected sample."
     )
 
@@ -1594,7 +1949,7 @@ def show_document_summary(results: list, prescribed_future: str,
         st.markdown("#### Dominant-Activity Distribution Among Analyzed Comments")
         render_pct_bars(dist["activity_counts"], ACTIVITY_META, n)
     with col3:
-        st.markdown("#### Activity-Performance (Subtype) Distribution")
+        st.markdown("#### Activity-Performance Distribution")
         for key, cnt in sorted(dist["subtype_counts"].items(), key=lambda x: -x[1]):
             pct_val = round(cnt / n * 100, 1)
             st.markdown(f"- **{key}**: {cnt} ({pct_val}%)")
@@ -1602,12 +1957,13 @@ def show_document_summary(results: list, prescribed_future: str,
     st.markdown("---")
     st.markdown("## Comments to Review for Emergent Future-Making Challenges")
     st.caption(
-        "The paper defines these challenges as emergent outcomes arising "
-        "when consumers perform the SAME activity differently across "
-        "orientations. The lists below flag linked or same-thread comments "
-        "as candidates for interpretive review. They do NOT constitute an "
-        "automatic diagnosis that a challenge occurred, a percentage of "
-        "affected comments, or a Fragile Futures score."
+        "Convoluted Evaluations, Confrontational Negotiations, and "
+        "Competing Enactments are diagnosed from patterns across linked "
+        "discourse, practices, actors, touchpoints, or time -- never from "
+        "one isolated comment -- and require human interpretation. The "
+        "lists below flag linked or same-thread comments as candidates for "
+        "that review. They do NOT constitute an automatic diagnosis, a "
+        "percentage of affected comments, or a Fragile Futures score."
     )
 
     candidates = compute_challenge_review_candidates(results)
@@ -1667,7 +2023,7 @@ def show_document_summary(results: list, prescribed_future: str,
                         }
                         if len(distinct_orientations_for_activity) >= 2:
                             st.info(
-                                f"Candidate evidence for **{meta['label']}**: multiple "
+                                f"Candidate pattern for **{meta['label']}**: multiple "
                                 f"orientations ({', '.join(sorted(distinct_orientations_for_activity))}) "
                                 f"perform {meta['activity'].title()} differently within this thread. "
                                 f"Requires interpretive review, not an automatic diagnosis."
@@ -1682,6 +2038,9 @@ def show_document_summary(results: list, prescribed_future: str,
             "demonstrate interaction, clash, interference, or Fragile "
             "Futures. No fictitious exchanges have been reconstructed."
         )
+
+    st.markdown("---")
+    render_challenge_sensitive_actions(candidates, thread_summary, n)
 
     st.caption(FRAGILE_FUTURES_DEFINITION)
 
@@ -1724,32 +2083,63 @@ def render_static_roadmaps(mode: str = "single"):
     st.markdown("## Roadmap Reference")
     if mode == "single":
         st.caption(
-            "This application, for a single comment, primarily supports "
-            "mapping future-making orientations and activities. It does not "
+            "For a single comment, this application primarily supports "
+            "mapping future-making orientations and activities (roadmap "
+            "steps 1-2). It does not diagnose future-making challenges or "
             "generate later-step actions from one comment."
         )
     else:
         st.caption(
             "This application supports mapping orientations and organizing "
-            "comments for human review of possible future-making challenges. "
-            "It does not claim to complete the later roadmap steps."
+            "comments for human review of possible future-making challenges "
+            "(roadmap steps 1-3). It does not claim to complete the later "
+            "roadmap steps."
         )
-    policy_tab, manager_tab = st.tabs(["Policymaking Roadmap", "Managerial Roadmap"])
+
+    policy_tab, manager_tab, ai_tab = st.tabs([
+        "Policymaking Roadmap (7 steps)", "Managerial Roadmap (6 steps)",
+        "AI-Integrated Healthcare Illustration"
+    ])
+
     with policy_tab:
         for num, title, desc in POLICY_ROADMAP_STEPS:
             st.markdown(f"**Step {num}: {title}**")
             st.caption(desc)
-        with st.expander("Orientation-sensitive reference material (not generated by the analysis)"):
-            for ori, text in POLICY_ORIENTATION_REFERENCE.items():
-                st.markdown(f"**{ori}:** {text}")
+        with st.expander("Orientation-sensitive policy guidance (fixed reference, not generated by the analysis)"):
+            for ori, content in POLICY_ORIENTATION_GUIDANCE.items():
+                st.markdown(f"**{ori}**")
+                st.write(content["implications"])
+                st.caption(content["action"])
+        with st.expander("Challenge-sensitive policy actions (fixed reference)"):
+            for key, meta in CHALLENGE_DEFINITIONS.items():
+                st.markdown(f"**{meta['label']}**")
+                st.write(CHALLENGE_POLICY_ACTIONS[key])
+
     with manager_tab:
         for num, title, desc in MANAGER_ROADMAP_STEPS:
             st.markdown(f"**Step {num}: {title}**")
             st.caption(desc)
-        with st.expander("Orientation-sensitive reference material (not generated by the analysis)"):
-            for ori, text in MANAGER_ORIENTATION_REFERENCE.items():
-                st.markdown(f"**{ori}:** {text}")
+        with st.expander("Orientation-sensitive managerial guidance (fixed reference, not generated by the analysis)"):
+            for ori, content in MANAGER_ORIENTATION_GUIDANCE.items():
+                st.markdown(f"**{ori}**")
+                st.write(content["implications"])
+                st.caption(content["action"])
+        with st.expander("Challenge-sensitive managerial actions (fixed reference)"):
+            for key, meta in CHALLENGE_DEFINITIONS.items():
+                st.markdown(f"**{meta['label']}**")
+                st.write(CHALLENGE_MANAGER_ACTIONS[key])
         st.caption(CROSS_ORIENTATION_NOTE)
+
+    with ai_tab:
+        st.info(AI_HEALTHCARE_INTRO)
+        st.markdown("**Orientation illustrations (Web Appendix E)**")
+        for ori, text in AI_HEALTHCARE_ORIENTATION_ILLUSTRATION.items():
+            st.markdown(f"*{ori}*")
+            st.caption(text)
+        st.markdown("**Challenge illustrations (Web Appendix E)**")
+        for key, meta in CHALLENGE_DEFINITIONS.items():
+            st.markdown(f"*{meta['label']}*")
+            st.caption(AI_HEALTHCARE_CHALLENGE_ILLUSTRATION[key])
 
 
 def show_results(result: dict, prescribed_future: str, show_interpretive_note: bool = True,
@@ -1793,7 +2183,7 @@ def show_results(result: dict, prescribed_future: str, show_interpretive_note: b
             <p style="color:#777;margin:6px 0 2px;font-size:11px;">{cfg.get('narrative','')}</p>
             <p style="color:#777;margin:2px 0;font-size:11px;">{cfg.get('temporality','')}</p>
             <p style="color:#777;margin:2px 0;font-size:11px;">{cfg.get('goal','')}</p>
-            <p style="color:#999;margin:6px 0 0;font-size:10px;">Dominant orientation</p>
+            <p style="color:#999;margin:6px 0 0;font-size:10px;">Diagnostic orientation, not a fixed consumer segment</p>
         </div>
         """, unsafe_allow_html=True)
     with col2:
@@ -1811,10 +2201,8 @@ def show_results(result: dict, prescribed_future: str, show_interpretive_note: b
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("#### Secondary Classification(s)")
         st.caption(
-            "Future-making activities are interdependent and recursive; "
-            "orientations may be combined. These are additional, "
-            "substantively DISTINCT classifications -- not evidence that "
-            "was mobilized in service of the dominant classification."
+            "Future-making activities are interdependent and recursive. "
+            "These are additional, substantively DISTINCT classifications."
         )
         for sec in secondary:
             sec_ori, sec_act, sec_sub = sec.get("orientation", ""), sec.get("activity", ""), sec.get("activity_subtype", "")
@@ -2164,8 +2552,8 @@ def main():
                         f"Detected {len(records)} labeled comments sharing one conversation. "
                         f"They will be treated as a thread window for interpretive context "
                         f"(no parent-reply relationship is assumed unless explicitly specified). "
-                        f"Any trailing manuscript orientation labels (e.g., '(Catalyzer "
-                        f"Orientation)') have been stripped from the text sent for analysis."
+                        f"Any trailing manuscript orientation labels have been stripped from the "
+                        f"text sent for analysis."
                     )
                 elif boundary_choice == "Custom separator":
                     separator = st.text_input("Comment separator (exact string used to split comments):", value="---")
@@ -2269,15 +2657,31 @@ def main():
     # ─────────────────────────────────────────
     st.markdown("---")
     with st.expander("Advanced / Developer Tools"):
+        st.markdown("#### Framework Validation (structural, no API calls)")
+        st.caption(
+            "Verifies that the app's categories, roadmap step counts, and "
+            "guidance dictionaries remain exactly aligned with the "
+            "manuscript and Web Appendices, and that no unsupported "
+            "policy/managerial content has been introduced."
+        )
+        if st.button("Run Framework Validation"):
+            tests = run_framework_validation()
+            n_pass = sum(1 for _, ok, _ in tests if ok)
+            st.metric("Structural tests passed", f"{n_pass} / {len(tests)}")
+            for name, ok, detail in tests:
+                status = "PASS" if ok else "FAIL"
+                with st.expander(f"[{status}] {name}"):
+                    st.write(detail)
+
+        st.markdown("---")
         st.markdown("#### Coding Consistency Check")
         st.caption(
             "Agreement with built-in benchmark examples (quoted or "
             "paraphrased from the manuscript's dataset) tests whether the "
-            "current prompt reproduces predetermined coding decisions for "
-            "activity, activity performance/subtype, orientation, and "
-            "Negotiation recall. This is an internal consistency check for "
-            "an interactive demonstration tool -- it does NOT constitute "
-            "empirical validation, intercoder reliability, or evidence of "
+            "current prompt reproduces predetermined coding decisions. "
+            "This is an internal consistency check for an interactive "
+            "demonstration tool -- it does NOT constitute empirical "
+            "validation, intercoder reliability, or evidence of "
             "generalizability."
         )
         if st.button("Run Coding Consistency Check"):
@@ -2292,21 +2696,11 @@ def main():
                     m2.metric("Activity agreement", f"{report['overall_activity_agreement']*100:.1f}%")
                     m3.metric("Subtype agreement", f"{report['overall_subtype_agreement']*100:.1f}%")
                     m4.metric("Orientation agreement", f"{report['overall_orientation_agreement']*100:.1f}%")
-                    if report.get("negotiation_recall") is not None:
-                        st.metric(
-                            f"Negotiation recall ({report['n_negotiation_examples']} manuscript examples)",
-                            f"{report['negotiation_recall']*100:.1f}%"
-                        )
                     for r in report["results"]:
                         status = "PASS" if r["match"] else "FAIL"
                         with st.expander(f"[{status}] {r['example']}"):
                             st.write("Expected (dominant):", r["expected"])
                             st.write("Predicted (dominant):", r["predicted"])
-                            st.write(
-                                f"Activity match: {r['activity_match']} | "
-                                f"Subtype match: {r['subtype_match']} | "
-                                f"Orientation match: {r['orientation_match']}"
-                            )
                             if r.get("secondary_expected"):
                                 st.write(f"Secondary check [{'PASS' if r.get('secondary_match') else 'FAIL'}]: expected {r['secondary_expected']}")
                             if r.get("error"):
