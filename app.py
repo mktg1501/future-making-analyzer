@@ -28,13 +28,13 @@ DEFAULT_THREAD = "_default_thread_"
 # SCOPE / INTERPRETIVE-USE NOTES
 # ─────────────────────────────────────────
 INTERPRETIVE_USE_NOTE = (
-    "Interpretive-use note: the paper defines future-making activities as "
-    "interdependent, entangled, and recursive rather than sequential, and "
-    "future-making orientations as diagnostic, socially patterned ways of "
-    "performing future-making rather than fixed consumer or patient types "
-    "or market segments. This application is an interactive demonstration "
-    "tool, not a validated diagnostic instrument. Review outputs alongside "
-    "the complete comment, any available context, and relevant behavioral "
+    "Interpretive-use note: future-making activities are interdependent, "
+    "entangled, and recursive rather than sequential, and future-making "
+    "orientations are diagnostic, socially patterned ways of performing "
+    "future-making rather than fixed consumer or patient types or market "
+    "segments. This application is an interactive demonstration tool, not "
+    "a validated diagnostic instrument. Review outputs alongside the "
+    "complete comment, any available context, and relevant behavioral "
     "evidence."
 )
 
@@ -55,8 +55,6 @@ consumers evaluate, negotiate, and enact preferred futures.
   Zero Emission Vehicle (ZEV) interventions.
 * The authors expect the insights may apply to other future-oriented
   intervention contexts.
-* Applying the framework to AI-integrated healthcare is illustrative of
-  expected transferability; it is **not** independent empirical validation.
 * Intervention type -- Fixed, Bounded, Flexible, or Open -- depends on the
   specific scope and prescriptiveness of the intervention being analyzed,
   not on its general domain.
@@ -74,9 +72,8 @@ consumers evaluate, negotiate, and enact preferred futures.
   discourse, practices, actors, touchpoints, or time. They are never
   inferred from a single comment, and this application never assigns them
   an automatic score or probability.
-* The Policymaking Roadmap (7 steps) and Managerial Roadmap (6 steps)
-  reproduced in this application are transcribed from the authors'
-  Figures 3 and 4.
+* This application reproduces a Policymaking Roadmap (7 steps) and a
+  Managerial Roadmap (6 steps) to support orientation-sensitive responses.
 """
 
 # ─────────────────────────────────────────
@@ -120,8 +117,7 @@ def _clean_enum(value) -> str:
 
 
 # ─────────────────────────────────────────
-# SYSTEM PROMPT -- classification logic (unchanged in this pass; not part
-# of the roadmap/implications correction requested here).
+# SYSTEM PROMPT -- classification logic
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an analytical assistant supporting the mapping of consumer
@@ -148,10 +144,10 @@ You will always be given TWO separate fields:
 A. SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (background context)
 ====================================================================
 
-  FIXED (Narrow scope, Highly prescriptive)   -- e.g., ban on single-use plastic bags
+  FIXED (Narrow scope, Highly prescriptive)   -- e.g., a ban on a single product or material
   BOUNDED (Broad scope, Highly prescriptive)  -- e.g., ZEV policies and strategies
-  FLEXIBLE (Narrow scope, Lowly prescriptive) -- e.g., Meat-free Mondays
-  OPEN (Broad scope, Lowly prescriptive)      -- e.g., adoption of AI in healthcare
+  FLEXIBLE (Narrow scope, Lowly prescriptive) -- e.g., a voluntary behavioral guideline for one practice
+  OPEN (Broad scope, Lowly prescriptive)      -- e.g., a broad technological or societal shift with no single binding policy target
 
 This typology contextualizes the prescribed future conceptually. It does
 NOT predetermine which orientations, activities, or future-making
@@ -272,7 +268,7 @@ current practice while explicitly refusing adoption; REROUTE (Expander)
 -- directing practice toward a different, broader preferred future.
 
 ====================================================================
-C. FUTURE-MAKING ORIENTATIONS (Table 2 / Table WC1)
+C. FUTURE-MAKING ORIENTATIONS
 ====================================================================
 
 --- CATALYZER --- Urgency narrative: the future is now, and the
@@ -354,13 +350,13 @@ E. DECISION PROCEDURE -- apply in this exact order for every focal comment
 
 This is an internal application decision procedure. It does not introduce
 any new theoretical category beyond Evaluation, Negotiation, Enactment,
-and the four orientations already defined in the paper.
+and the four orientations already defined above.
 
 ====================================================================
-F. GROUNDING EXAMPLES (quoted or paraphrased from the manuscript's dataset)
+F. GROUNDING EXAMPLES (illustrative)
 ====================================================================
 
-Example (CATALYZER, Evaluation/Simplify) -- Whirlpool forum (Alfonso):
+Example (CATALYZER, Evaluation/Simplify) -- online forum (Alfonso):
 "Once EVs are cheaper to buy than ICE cars the transition will happen
 fast... EVs can stand on their own merits now."
 -> EVALUATION / SIMPLIFY / CATALYZER.
@@ -374,9 +370,9 @@ our own minerals to make batteries for EVs on a global scale??"
 Example (CATALYZER, Negotiation/Advocate, mostly technical content --
 functional dominance over volume) -- forum exchange, User 1:
 "EVs will be on an exponential adoption curve. Everyone will want one...
-Globally, governments are going to start making fossil fuels very
-expensive... Or are you advocating that we go back to bicycles and
-horses, or maybe just buses?"
+Governments are going to start making fossil fuels very expensive... Or
+are you advocating that we go back to bicycles and horses, or maybe just
+buses?"
 -> The technical predictions are mobilized as rhetorical support for
 advocacy against an implied alternative: NEGOTIATION / ADVOCATE /
 CATALYZER.
@@ -388,12 +384,12 @@ the time... So if we got an EV it would just be our daily run around."
 DELAY / AMBIVALENT classification when secondary classifications are
 permitted, since a separable practice-change detail is present).
 
-Example (AMBIVALENT, Negotiation/Question) -- Facebook (Martin):
+Example (AMBIVALENT, Negotiation/Question) -- social media (Martin):
 "Have you thought about what they are gonna do with all the batteries
 once they expire because they aren't recyclable?"
 -> NEGOTIATION / QUESTION / AMBIVALENT.
 
-Example (RESISTANT, Negotiation/Reject) -- YouTube (Raj):
+Example (RESISTANT, Negotiation/Reject) -- online video comment (Raj):
 "We don't need politicians and their cronies telling us what sort of car
 we can have."
 -> NEGOTIATION / REJECT / RESISTANT.
@@ -414,13 +410,13 @@ REROUTE / EXPANDER classification when secondary classifications are
 permitted).
 
 Example (EXPANDER, Negotiation/Contest, declarative, no imperative) --
-Facebook (Dan):
+social media (Dan):
 "The future is less cars, in higher density pedestrian/bike and train
 orientated urban environments, where cars are a secondary transport
 really only for those who really need it."
 -> NEGOTIATION / CONTEST / EXPANDER.
 
-Example (RESISTANT, Enactment/Prevent) -- news media (StarT):
+Example (RESISTANT, Enactment/Prevent) -- news media comment (StarT):
 "I for one WILL NOT be forced into an elec vehicle and spend half my
 travel time charging the damn thing to go to hell."
 -> ENACTMENT / PREVENT / RESISTANT.
@@ -452,17 +448,16 @@ H. WHAT NOT TO DO
 
 Do NOT determine or output any future-making challenge (Convoluted
 Evaluations, Confrontational Negotiations, or Competing Enactments) or any
-Fragile Futures assessment for a single comment. The paper defines these
-as emergent, qualitative conditions that arise only from patterns across
-linked discourse, practices, actors, touchpoints, or time, and that
-require human interpretation. This determination is never made by you for
-one comment; it is organized for human review by the calling application
+Fragile Futures assessment for a single comment. These are emergent,
+qualitative conditions that arise only from patterns across linked
+discourse, practices, actors, touchpoints, or time, and that require
+human interpretation. This determination is never made by you for one
+comment; it is organized for human review by the calling application
 across multiple, linked comments.
 
 Do NOT generate policy or managerial recommendations, instruments, or
 evidence requirements -- these are provided by the calling application as
-fixed reference content traceable to the manuscript, its Web Appendices,
-and the authors' Figures 3 and 4.
+fixed reference content.
 
 Do NOT introduce any interaction-type category, negotiation-evidence
 category, relational-positioning category, or named-address rule.
@@ -543,8 +538,8 @@ ACTIVITY_META = {
 }
 
 # ─────────────────────────────────────────
-# FUTURE-MAKING CHALLENGES (Discussion section + Figures 3/4 Step 3)
-# Corpus-level only. Never inferred from a single comment.
+# FUTURE-MAKING CHALLENGES -- corpus-level only. Never inferred from a
+# single comment.
 # ─────────────────────────────────────────
 CHALLENGE_DEFINITIONS = {
     "CONVOLUTED_EVALUATIONS": {
@@ -587,10 +582,8 @@ FRAGILE_FUTURES_DEFINITION = (
 )
 
 # ════════════════════════════════════════════════════════════════════
-# ROADMAP CONTENT -- transcribed VERBATIM from the authors' Figure 3
-# (Policymaking Roadmap, 7 steps) and Figure 4 (Managerial Roadmap,
-# 6 steps). This is the single source of truth for all roadmap wording
-# used in the UI. Fixed reference content; never generated by the LLM.
+# ROADMAP CONTENT -- single source of truth for all roadmap wording used
+# in the UI. Fixed reference content; never generated by the LLM.
 # ════════════════════════════════════════════════════════════════════
 
 EXPECTED_POLICY_STEP_TITLES = [
@@ -638,7 +631,7 @@ POLICY_ROADMAP_STEPS = [
 
 MANAGER_ROADMAP_STEPS = [
     ("1", EXPECTED_MANAGER_STEP_TITLES[0],
-     "Make explicit what future the intervention seeks to prescribe."),
+     "Identify the future prescribed by the intervention."),
     ("2", EXPECTED_MANAGER_STEP_TITLES[1],
      "Identify how people adopting different orientations evaluate, "
      "negotiate, and enact (or not) the prescribed future. Consider "
@@ -663,9 +656,9 @@ MANAGER_ROADMAP_STEPS = [
      "assistance, and easy ways to pause, reverse, or modify adoption."),
 ]
 
-# --- Step 2 content: orientation "lens" sentence is IDENTICAL across
-# both figures; the monitoring bullets differ between Figure 3 and
-# Figure 4. ---
+# --- Step 2 content: orientation "lens" sentence is identical across
+# both roadmaps; the monitoring bullets differ between the policy and
+# managerial versions. ---
 STEP2_ORIENTATION_LENS = {
     "CATALYZER": "This orientation sees the prescribed future as urgent, desirable, and already underway.",
     "AMBIVALENT": "This orientation sees the prescribed future as valuable, but conditions are not yet ready.",
@@ -711,8 +704,8 @@ MANAGER_STEP2_SIGNALS = {
     ],
 }
 
-# --- Step 3 content: diagnostic questions differ in wording between
-# Figure 3 (policy) and Figure 4 (managerial). ---
+# --- Step 3 content: diagnostic questions differ in wording between the
+# policy and managerial roadmaps. ---
 POLICY_STEP3_QUESTIONS = {
     "CONVOLUTED_EVALUATIONS": "Are incompatible evidence, assumptions, or temporal horizons preventing shared sensemaking?",
     "CONFRONTATIONAL_NEGOTIATIONS": "Is disagreement escalating around autonomy, fairness, legitimacy, or problem framing?",
@@ -725,8 +718,8 @@ MANAGER_STEP3_QUESTIONS = {
     "COMPETING_ENACTMENTS": "Are consumers accelerating, delaying, preventing, and/or re-routing practice change through incompatible behaviours?",
 }
 
-# --- Step 4 content: Figure 3 (policy) gives one Objective line per
-# orientation; Figure 4 (managerial) gives an Objective AND an Avoid
+# --- Step 4 content: the policy roadmap gives one Objective line per
+# orientation; the managerial roadmap gives an Objective AND an Avoid
 # line per orientation. These are NOT interchangeable and must not be
 # merged. ---
 POLICY_STEP4_OBJECTIVES = {
@@ -757,10 +750,9 @@ MANAGER_STEP4_OBJECTIVES = {
 
 # ─────────────────────────────────────────
 # ORIENTATION-SENSITIVE GUIDANCE -- assembled from the Step 2/Step 4
-# roadmap content above, supplemented only by short, already-validated
-# narrative sentences from the main text's "Recommendations for..."
-# sections (never contradicting the figures). Orientations are treated
-# as diagnostic patterns, not segments.
+# roadmap content above, supplemented only by short narrative sentences
+# consistent with that content (never contradicting the roadmap steps).
+# Orientations are treated as diagnostic patterns, not segments.
 # ─────────────────────────────────────────
 POLICY_ORIENTATION_GUIDANCE = {
     "CATALYZER": {
@@ -863,10 +855,9 @@ MANAGER_ORIENTATION_GUIDANCE = {
 }
 
 # ─────────────────────────────────────────
-# CHALLENGE-SENSITIVE GUIDANCE -- Step 3 diagnostic question (verbatim
-# from the relevant figure) + a fuller action reference generalized
-# from Web Appendix E's Step-3 "Recommended Policy Action" / "Managerial
-# interventions and cautions" columns. Fixed; never LLM-generated.
+# CHALLENGE-SENSITIVE GUIDANCE -- Step 3 diagnostic question plus a
+# fuller action reference for each future-making challenge. Fixed;
+# never LLM-generated.
 # ─────────────────────────────────────────
 CHALLENGE_POLICY_GUIDANCE = {
     "CONVOLUTED_EVALUATIONS": {
@@ -940,7 +931,7 @@ CHALLENGE_MANAGER_GUIDANCE = {
     },
 }
 
-# Step 5 (managerial) messaging note -- verbatim from Figure 4.
+# Step 5 (managerial) messaging note.
 MANAGER_MESSAGING_NOTE = (
     "Do not rely on a single persuasive frame. Universal claims (\"the "
     "change is inevitable,\" \"everyone benefits\") may mobilize consumers "
@@ -948,8 +939,8 @@ MANAGER_MESSAGING_NOTE = (
     "confrontation elsewhere."
 )
 
-# Supplementary cross-orientation interference check (Web Appendix Table
-# WE2, Step 4) -- kept distinct from the Figure 4 Step 5 note above.
+# Supplementary cross-orientation interference check -- kept distinct
+# from the Step 5 messaging note above.
 CROSS_ORIENTATION_NOTE = (
     "Cross-orientation interference check: a response tailored to one "
     "orientation may intensify a challenge for another -- for example, an "
@@ -958,93 +949,6 @@ CROSS_ORIENTATION_NOTE = (
     "critique if it presents the intervention as a complete solution. "
     "Check for such spillover before finalizing a response."
 )
-
-# ─────────────────────────────────────────
-# AI-INTEGRATED HEALTHCARE ILLUSTRATION -- verbatim/near-verbatim from
-# Web Appendix E (Tables WE1/WE2, "Application to AI-integrated
-# healthcare" column). Presented as an ILLUSTRATION of transferability
-# to an Open, broad-scope, comparatively low-prescription intervention,
-# applied separately to concrete AI-mediated practices. This is NOT
-# empirical validation and is never mixed into the domain-neutral
-# guidance above. Kept in its own namespace so it cannot be picked up by
-# the general roadmap rendering or by the full-file unsupported-terms
-# scan applied to the rest of the module.
-# ─────────────────────────────────────────
-AI_HEALTHCARE_INTRO = (
-    "Illustration only -- not empirical validation. The manuscript treats "
-    "AI-integrated healthcare as an Open intervention: broad in scope, "
-    "comparatively low in prescriptiveness, arising primarily from "
-    "technological and societal developments rather than a single policy "
-    "goal, with multiple possible trajectories and no predefined societal "
-    "outcome. The roadmaps below are illustrated separately for concrete "
-    "AI-mediated practices -- e.g., AI-supported triage, diagnostic tools, "
-    "AI-enabled devices, robotic-assisted surgery, mental-health "
-    "applications, and predictive risk-scoring systems -- because "
-    "different applications can prescribe very different practice changes "
-    "for patients."
-)
-
-AI_HEALTHCARE_ORIENTATION_ILLUSTRATION = {
-    "CATALYZER": (
-        "\"AI is already more accurate than humans and will inevitably "
-        "improve healthcare.\" Example action: authorize a bounded "
-        "AI-triage pilot in selected primary-care services, requiring "
-        "comparison with clinician-led triage and reporting by age, "
-        "language, disability, ethnicity, and digital access, so that "
-        "reduced waiting time in one channel is not assumed to generalize "
-        "or to displace care elsewhere."
-    ),
-    "AMBIVALENT": (
-        "\"AI could be valuable, but I need stronger evidence and clearer "
-        "safeguards.\" Example: a patient may be willing to use an "
-        "AI-supported tool only under specified conditions -- policymakers "
-        "and managers should investigate those conditions rather than "
-        "assume hesitation reflects generalized resistance to innovation."
-    ),
-    "RESISTANT": (
-        "\"AI is a tool for surveillance, cost reduction, and a poor "
-        "replacement for expert judgment.\" Example action: prohibit fully "
-        "automated denial of essential care and require an identifiable "
-        "professional who can review, override, and accept responsibility "
-        "for a decision."
-    ),
-    "EXPANDER": (
-        "\"A more efficient algorithm does not solve unequal access to "
-        "healthcare.\" Example: patients may argue that faster AI-"
-        "supported triage does not resolve workforce shortages, unequal "
-        "access, or inadequate preventative care, and may advocate for "
-        "community clinics, multilingual services, or more clinicians -- "
-        "AI should be framed as one possible component of healthcare "
-        "transformation rather than the complete solution."
-    ),
-}
-
-AI_HEALTHCARE_CHALLENGE_ILLUSTRATION = {
-    "CONVOLUTED_EVALUATIONS": (
-        "Patients may stall while seeking evidence of human review; some "
-        "may avoid evaluation because they distrust the institution; "
-        "community groups may complexify evaluation by adding equity and "
-        "downstream-access consequences. Policymakers could establish a "
-        "shared assessment covering accuracy, false classifications, "
-        "subgroup performance, patient comprehension, and actual access to "
-        "care."
-    ),
-    "CONFRONTATIONAL_NEGOTIATIONS": (
-        "Confrontation may emerge between preferred futures centered on "
-        "rapid AI integration, conditional use, human-led care, or "
-        "broader healthcare-system transformation. Policymakers could "
-        "create legitimate and accessible opportunities for patients to "
-        "compare and negotiate the scope of specific AI applications."
-    ),
-    "COMPETING_ENACTMENTS": (
-        "Some patients may readily use an AI-mediated pathway, others may "
-        "delay or refuse it, and others may seek human-first or "
-        "alternative services. These present practices accelerate, delay, "
-        "prevent, or reroute AI integration and may produce competing "
-        "healthcare futures that require coordinated, not uniform, "
-        "support."
-    ),
-}
 
 # ─────────────────────────────────────────
 # BENCHMARK EXAMPLES -- hidden from normal workflows; used only inside
@@ -1133,11 +1037,11 @@ EXAMPLES = {
         "context": "", "context_type": "NONE", "is_consultation": False, "secondary_expected": None,
         "comment": (
             "EVs will be on an exponential adoption curve. Everyone will want "
-            "one... Nobody will want an expensive 2nd hand ICE... Globally, "
-            "governments are going to start making fossil fuels very expensive. "
-            "T-A-X-E-S will be levied on this foul, polluting rubbish we are all "
-            "burning today... Or are you advocating that we go back to bicycles "
-            "and horses, or maybe just buses?"
+            "one... Nobody will want an expensive 2nd hand ICE... Governments "
+            "are going to start making fossil fuels very expensive. T-A-X-E-S "
+            "will be levied on this foul, polluting rubbish we are all burning "
+            "today... Or are you advocating that we go back to bicycles and "
+            "horses, or maybe just buses?"
         )
     },
     "NEGOTIATION | Question/Ambivalent (Martin)": {
@@ -1206,9 +1110,9 @@ EXAMPLES = {
             "emissions from commercial vehicles and buses. If you want modal "
             "shift and reduced emissions, it starts with reducing the impact of "
             "vehicles on pedestrians and cyclists. There's no reason we can't "
-            "adopt tighter standards mandated by Europe and California... "
-            "Australia's regulation around vehicle emissions and efficiency is "
-            "utterly laughable by global standards."
+            "adopt tighter standards mandated elsewhere... Australia's "
+            "regulation around vehicle emissions and efficiency is utterly "
+            "laughable by global standards."
         )
     },
     "NEGOTIATION | Contest/Expander (Forum User 4)": {
@@ -1366,10 +1270,9 @@ recommendation -- these are outside your task.
 
 
 def run_consistency_suite(api_key: str) -> dict:
-    """Internal consistency check against benchmark examples quoted or
-    paraphrased from the manuscript's dataset. Does NOT constitute
-    empirical validation, intercoder reliability, or evidence of
-    generalizability."""
+    """Internal consistency check against illustrative benchmark examples.
+    Does NOT constitute empirical validation, intercoder reliability, or
+    evidence of generalizability."""
     results = []
     for name, ex in EXAMPLES.items():
         try:
@@ -1429,8 +1332,8 @@ def run_consistency_suite(api_key: str) -> dict:
 
 
 # ─────────────────────────────────────────
-# FRAMEWORK VALIDATION -- structural tests for requirement 12.
-# These are code-level checks, not LLM calls.
+# FRAMEWORK VALIDATION -- structural tests. Pure code-level checks, no
+# API calls.
 # ─────────────────────────────────────────
 
 REQUIRED_ORIENTATIONS = {"CATALYZER", "AMBIVALENT", "RESISTANT", "EXPANDER"}
@@ -1442,8 +1345,7 @@ REQUIRED_SUBTYPES = {
 REQUIRED_CHALLENGES = {"CONVOLUTED_EVALUATIONS", "CONFRONTATIONAL_NEGOTIATIONS", "COMPETING_ENACTMENTS"}
 
 # Terms that must NEVER appear anywhere in this module's guidance /
-# roadmap content, because they do not appear in the manuscript, its Web
-# Appendices, or the authors' Figures 3/4.
+# roadmap content, because they are not part of this framework.
 UNSUPPORTED_TERMS = [
     "sandbox", "time-limited sandbox", "citizen assembl", "data trust",
     "moratoria", "moratorium", "deliberative forum", "sunset claus",
@@ -1451,17 +1353,8 @@ UNSUPPORTED_TERMS = [
     "predefined threshold", "mandatory failure reporting",
     "independent audit", "alternative governance model",
     "unacceptable use", "governed pilot", "competition policy",
+    "staged authorization",
 ]
-
-# Dicts explicitly allowed to reference AI-healthcare-specific
-# illustration language drawn from Web Appendix E; excluded from the
-# full-file unsupported-terms scan below since they are kept in their
-# own namespace and never mixed into the general roadmap/guidance.
-AI_ILLUSTRATION_DICT_NAMES = {
-    "AI_HEALTHCARE_INTRO",
-    "AI_HEALTHCARE_ORIENTATION_ILLUSTRATION",
-    "AI_HEALTHCARE_CHALLENGE_ILLUSTRATION",
-}
 
 EXPECTED_OUTPUT_SCHEMA_KEYS = [
     "prescribed_future_acknowledged", "main_activity", "activity_subtype",
@@ -1486,7 +1379,7 @@ def run_framework_validation() -> list:
     for act, expected_subs in REQUIRED_SUBTYPES.items():
         actual_subs = set(ACTIVITY_META.get(act, {}).get("subtypes", {}).keys())
         tests.append((
-            f"{act} has exactly the 4 manuscript performances",
+            f"{act} has exactly the 4 expected performances",
             actual_subs == expected_subs,
             f"Found: {sorted(actual_subs)}"
         ))
@@ -1503,12 +1396,12 @@ def run_framework_validation() -> list:
     ))
 
     tests.append((
-        "Policy roadmap step titles match Figure 3 exactly, in order",
+        "Policy roadmap step titles match the expected sequence, in order",
         [t for _, t, _ in POLICY_ROADMAP_STEPS] == EXPECTED_POLICY_STEP_TITLES,
         f"Found: {[t for _, t, _ in POLICY_ROADMAP_STEPS]}"
     ))
     tests.append((
-        "Managerial roadmap step titles match Figure 4 exactly, in order",
+        "Managerial roadmap step titles match the expected sequence, in order",
         [t for _, t, _ in MANAGER_ROADMAP_STEPS] == EXPECTED_MANAGER_STEP_TITLES,
         f"Found: {[t for _, t, _ in MANAGER_ROADMAP_STEPS]}"
     ))
@@ -1542,13 +1435,11 @@ def run_framework_validation() -> list:
         f"Missing/incomplete: {[k for k in REQUIRED_CHALLENGES if k not in CHALLENGE_MANAGER_GUIDANCE]}"
     ))
 
-    # Policy Step 3 vs. Managerial Step 3 questions must NOT be identical
-    # word-for-word (Figures 3 and 4 use different diagnostic phrasing).
     questions_correctly_distinguished = all(
         POLICY_STEP3_QUESTIONS[k] != MANAGER_STEP3_QUESTIONS[k] for k in REQUIRED_CHALLENGES
     )
     tests.append((
-        "Policy and managerial Step-3 diagnostic questions preserve Figure 3 vs. Figure 4 wording differences",
+        "Policy and managerial Step-3 diagnostic questions use distinct wording (not merged)",
         questions_correctly_distinguished,
         "Some questions were found identical across roadmaps" if not questions_correctly_distinguished else "Confirmed distinct"
     ))
@@ -1568,12 +1459,12 @@ def run_framework_validation() -> list:
         f"Missing: {[o for o in REQUIRED_ORIENTATIONS if o not in MANAGER_ORIENTATION_GUIDANCE]}"
     ))
     tests.append((
-        "Managerial Step 4 guidance includes 'avoid' content (Figure 4 only)",
+        "Managerial Step 4 guidance includes 'avoid' content (managerial roadmap only)",
         manager_has_avoid,
         "Confirmed" if manager_has_avoid else "Missing 'avoid' field for one or more orientations"
     ))
     tests.append((
-        "Policy Step 4 guidance does not import managerial-only 'avoid' content (Figure 3 has none)",
+        "Policy Step 4 guidance does not import managerial-only 'avoid' content (policy roadmap has none)",
         policy_has_no_avoid_field,
         "Confirmed" if policy_has_no_avoid_field else "Policy guidance incorrectly contains an 'avoid' field"
     ))
@@ -1599,11 +1490,7 @@ def run_framework_validation() -> list:
         full_source = inspect.getsource(inspect.getmodule(run_framework_validation))
     except Exception:
         full_source = ""
-    scoped_source = full_source
-    for dict_name in AI_ILLUSTRATION_DICT_NAMES:
-        pattern = rf"{dict_name}\s*=\s*\{{.*?\n\}}"
-        scoped_source = re.sub(pattern, "", scoped_source, flags=re.DOTALL)
-    found_unsupported_wholefile = [t for t in UNSUPPORTED_TERMS if t in scoped_source.lower()]
+    found_unsupported_wholefile = [t for t in UNSUPPORTED_TERMS if t in full_source.lower()]
     tests.append((
         "Absence of unsupported recommendations/instruments (full-file scan)",
         len(found_unsupported_wholefile) == 0,
@@ -1629,7 +1516,7 @@ def run_framework_validation() -> list:
 
 
 # ─────────────────────────────────────────
-# COMMENT / THREAD DATA STRUCTURES (technical infrastructure, no theory)
+# COMMENT / THREAD DATA STRUCTURES (technical infrastructure)
 # ─────────────────────────────────────────
 
 def has_comment_text_column(df: pd.DataFrame) -> bool:
@@ -1931,9 +1818,9 @@ def compute_challenge_review_candidates(results: list) -> dict:
 
 def compute_same_thread_diversity(results: list) -> dict:
     """For comments sharing a thread_id without explicit parent-reply
-    links (e.g., a manuscript-style labeled exchange), summarizes the
-    diversity of performances present. Descriptive only -- does not claim
-    an observed interaction or a diagnosed challenge."""
+    links, summarizes the diversity of performances present. Descriptive
+    only -- does not claim an observed interaction or a diagnosed
+    challenge."""
     valid = [r for r in results if r and "_error" not in r]
     by_thread = {}
     for r in valid:
@@ -2045,8 +1932,7 @@ def render_challenge_sensitive_actions(candidates: dict, thread_summary: dict, n
     """Surface challenge-sensitive policy AND managerial actions only for
     challenges that have at least one candidate pattern (linked pairs or
     same-thread diversity) -- never unconditionally, and never framed as
-    a diagnosis. Shows both the verbatim Step-3 diagnostic question
-    (Figures 3/4) and the fuller action reference (Web Appendix E)."""
+    a diagnosis."""
     active_challenges = set()
     for key, pairs in candidates.items():
         if pairs:
@@ -2065,18 +1951,18 @@ def render_challenge_sensitive_actions(candidates: dict, thread_summary: dict, n
 
     st.markdown("#### Challenge-Sensitive Actions (surfaced only for candidate patterns found above)")
     st.caption(
-        "These are fixed, manuscript- and figure-grounded action "
-        "references -- not generated dynamically -- shown only for "
-        "challenges with at least one candidate pattern above. They "
-        "require interpretive review, not automatic implementation."
+        "These are fixed action references -- not generated dynamically -- "
+        "shown only for challenges with at least one candidate pattern "
+        "above. They require interpretive review, not automatic "
+        "implementation."
     )
     for key in active_challenges:
         meta = CHALLENGE_DEFINITIONS[key]
         with st.expander(f"{meta['label']} -- challenge-sensitive actions"):
-            st.markdown(f"**Policy diagnostic question (Figure 3, Step 3):** {CHALLENGE_POLICY_GUIDANCE[key]['diagnostic_question']}")
+            st.markdown(f"**Policy diagnostic question (Step 3):** {CHALLENGE_POLICY_GUIDANCE[key]['diagnostic_question']}")
             st.markdown(f"**Policy action:** {CHALLENGE_POLICY_GUIDANCE[key]['action']}")
             st.markdown("---")
-            st.markdown(f"**Managerial diagnostic question (Figure 4, Step 3):** {CHALLENGE_MANAGER_GUIDANCE[key]['diagnostic_question']}")
+            st.markdown(f"**Managerial diagnostic question (Step 3):** {CHALLENGE_MANAGER_GUIDANCE[key]['diagnostic_question']}")
             st.markdown(f"**Managerial action:** {CHALLENGE_MANAGER_GUIDANCE[key]['action']}")
 
 
@@ -2114,9 +2000,9 @@ def show_document_summary(results: list, prescribed_future: str,
     c4.metric("Without context", n_without_context)
     st.caption(
         "These percentages and counts describe the analyzed comments only. "
-        "They do not represent unique consumers, patients, or population "
-        "prevalence, and results depend on the source material, "
-        "segmentation, and selected sample."
+        "They do not represent unique consumers or population prevalence, "
+        "and results depend on the source material, segmentation, and "
+        "selected sample."
     )
 
     st.markdown("---")
@@ -2177,8 +2063,7 @@ def show_document_summary(results: list, prescribed_future: str,
     if thread_summary:
         st.markdown("#### Same-Thread Exchanges (no explicit parent links -- for review)")
         st.caption(
-            "These comments share a technical thread_id (e.g., a labeled "
-            "exchange such as 'User 1', 'User 2', ...) but no explicit "
+            "These comments share a technical thread_id but no explicit "
             "parent-reply relationship was specified. Diversity of "
             "performances within the same thread is shown below as "
             "candidate evidence for interpretive review -- it does not by "
@@ -2261,7 +2146,6 @@ def show_document_summary(results: list, prescribed_future: str,
 def _render_orientation_step2_grid(signals_dict: dict):
     cols = st.columns(4)
     for col, ori in zip(cols, ["CATALYZER", "AMBIVALENT", "RESISTANT", "EXPANDER"]):
-        cfg = ORIENTATIONS.get(ori, {})
         with col:
             st.markdown(f"**{ori.title()}**")
             st.caption(STEP2_ORIENTATION_LENS[ori])
@@ -2297,10 +2181,6 @@ def _render_step3_challenge_grid(questions_dict: dict):
 
 def render_static_roadmaps(mode: str = "single"):
     st.markdown("## Roadmap Reference")
-    st.caption(
-        "Transcribed from the authors' Figure 3 (Policymaking Roadmap) and "
-        "Figure 4 (Managerial Roadmap)."
-    )
     if mode == "single":
         st.caption(
             "For a single comment, this application primarily supports "
@@ -2316,10 +2196,9 @@ def render_static_roadmaps(mode: str = "single"):
             "roadmap steps."
         )
 
-    policy_tab, manager_tab, ai_tab = st.tabs([
-        "Policymaking Roadmap (7 steps -- Figure 3)",
-        "Managerial Roadmap (6 steps -- Figure 4)",
-        "AI-Integrated Healthcare Illustration"
+    policy_tab, manager_tab = st.tabs([
+        "Policymaking Roadmap (7 steps)",
+        "Managerial Roadmap (6 steps)",
     ])
 
     with policy_tab:
@@ -2327,15 +2206,15 @@ def render_static_roadmaps(mode: str = "single"):
             st.markdown(f"**Step {num}: {title}**")
             st.caption(desc)
             if num == "2":
-                with st.expander("Orientation lens and monitoring signals (Figure 3, Step 2)"):
+                with st.expander("Orientation lens and monitoring signals (Step 2)"):
                     _render_orientation_step2_grid(POLICY_STEP2_SIGNALS)
             elif num == "3":
-                with st.expander("Diagnostic questions per challenge (Figure 3, Step 3)"):
+                with st.expander("Diagnostic questions per challenge (Step 3)"):
                     _render_step3_challenge_grid(POLICY_STEP3_QUESTIONS)
                     for key, meta in CHALLENGE_DEFINITIONS.items():
                         st.caption(f"{meta['label']}: {meta['definition']}")
             elif num == "4":
-                with st.expander("Orientation objectives (Figure 3, Step 4)"):
+                with st.expander("Orientation objectives (Step 4)"):
                     _render_orientation_step4_grid_policy()
 
     with manager_tab:
@@ -2343,28 +2222,17 @@ def render_static_roadmaps(mode: str = "single"):
             st.markdown(f"**Step {num}: {title}**")
             st.caption(desc)
             if num == "2":
-                with st.expander("Orientation lens and monitoring signals (Figure 4, Step 2)"):
+                with st.expander("Orientation lens and monitoring signals (Step 2)"):
                     _render_orientation_step2_grid(MANAGER_STEP2_SIGNALS)
             elif num == "3":
-                with st.expander("Diagnostic questions per challenge (Figure 4, Step 3)"):
+                with st.expander("Diagnostic questions per challenge (Step 3)"):
                     _render_step3_challenge_grid(MANAGER_STEP3_QUESTIONS)
                     for key, meta in CHALLENGE_DEFINITIONS.items():
                         st.caption(f"{meta['label']}: {meta['definition']}")
             elif num == "4":
-                with st.expander("Orientation objectives and pitfalls to avoid (Figure 4, Step 4)"):
+                with st.expander("Orientation objectives and pitfalls to avoid (Step 4)"):
                     _render_orientation_step4_grid_manager()
                 st.caption(CROSS_ORIENTATION_NOTE)
-
-    with ai_tab:
-        st.info(AI_HEALTHCARE_INTRO)
-        st.markdown("**Orientation illustrations (Web Appendix E)**")
-        for ori, text in AI_HEALTHCARE_ORIENTATION_ILLUSTRATION.items():
-            st.markdown(f"*{ori}*")
-            st.caption(text)
-        st.markdown("**Challenge illustrations (Web Appendix E)**")
-        for key, meta in CHALLENGE_DEFINITIONS.items():
-            st.markdown(f"*{meta['label']}*")
-            st.caption(AI_HEALTHCARE_CHALLENGE_ILLUSTRATION[key])
 
 
 def show_results(result: dict, prescribed_future: str, show_interpretive_note: bool = True,
@@ -2686,7 +2554,7 @@ def main():
                 raw_text = st.text_area(
                     "Comments",
                     placeholder="Paste comments here, one per paragraph, separated by a blank line. "
-                                "Manuscript-style exchanges labeled 'User 1:', 'User 2:', etc. are "
+                                "Labeled exchanges such as 'User 1:', 'User 2:', etc. are "
                                 "automatically detected as a shared conversation.",
                     height=250
                 )
@@ -2755,7 +2623,7 @@ def main():
                 boundary_options = ["One comment per paragraph (default)", "Custom separator"]
                 if looks_like_labeled_exchange:
                     boundary_options.insert(
-                        0, f"Manuscript-style exchange ({user_label_hits} 'User N:' labels detected)"
+                        0, f"Labeled exchange ({user_label_hits} 'User N:' labels detected)"
                     )
                 if looks_like_consultation:
                     boundary_options.insert(0, f"Public consultation responses (auto-detected {id_hits} respondent IDs)")
@@ -2771,14 +2639,12 @@ def main():
                         placeholder="Describe the official question or policy proposal that respondents were answering."
                     )
                     st.info(f"Extracted {len(records)} individual consultation responses, each treated as one focal response.")
-                elif boundary_choice.startswith("Manuscript-style exchange"):
+                elif boundary_choice.startswith("Labeled exchange"):
                     records = build_comment_records_from_user_labels(stored_raw_text)
                     st.info(
                         f"Detected {len(records)} labeled comments sharing one conversation. "
                         f"They will be treated as a thread window for interpretive context "
-                        f"(no parent-reply relationship is assumed unless explicitly specified). "
-                        f"Any trailing manuscript orientation labels have been stripped from the "
-                        f"text sent for analysis."
+                        f"(no parent-reply relationship is assumed unless explicitly specified)."
                     )
                 elif boundary_choice == "Custom separator":
                     separator = st.text_input("Comment separator (exact string used to split comments):", value="---")
@@ -2885,10 +2751,9 @@ def main():
         st.markdown("#### Framework Validation (structural, no API calls)")
         st.caption(
             "Verifies that the app's categories, roadmap step counts and "
-            "wording (Figures 3/4), and guidance dictionaries remain "
-            "exactly aligned with the manuscript, Web Appendices, and "
-            "roadmap figures, and that no unsupported policy/managerial "
-            "content has been introduced anywhere in the module."
+            "wording, and guidance dictionaries remain internally "
+            "consistent, and that no unsupported policy/managerial content "
+            "has been introduced anywhere in the module."
         )
         if st.button("Run Framework Validation"):
             tests = run_framework_validation()
@@ -2902,12 +2767,11 @@ def main():
         st.markdown("---")
         st.markdown("#### Coding Consistency Check")
         st.caption(
-            "Agreement with built-in benchmark examples (quoted or "
-            "paraphrased from the manuscript's dataset) tests whether the "
-            "current prompt reproduces predetermined coding decisions. "
-            "This is an internal consistency check for an interactive "
-            "demonstration tool -- it does NOT constitute empirical "
-            "validation, intercoder reliability, or evidence of "
+            "Agreement with built-in illustrative benchmark examples tests "
+            "whether the current prompt reproduces predetermined coding "
+            "decisions. This is an internal consistency check for an "
+            "interactive demonstration tool -- it does NOT constitute "
+            "empirical validation, intercoder reliability, or evidence of "
             "generalizability."
         )
         if st.button("Run Coding Consistency Check"):
