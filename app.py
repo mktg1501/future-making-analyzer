@@ -82,7 +82,7 @@ consumers evaluate, negotiate, and enact preferred futures.
 MODE_SINGLE = "single"
 MODE_DOC = "document"
 MODE_SINGLE_LABEL = "Analyze a Single Comment"
-MODE_DOC_LABEL = "Map Orientations Across Selected Comments"
+MODE_DOC_LABEL = "Map orientations across selected comments or uploaded file"
 
 VALID_CONTEXT_TYPES = {
     "PARENT_REPLY", "THREAD_WINDOW", "ORIGINAL_POST", "CONSULTATION_PROMPT", "NONE"
