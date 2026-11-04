@@ -1252,26 +1252,17 @@ recommendation -- these are outside your task.
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_message}
+                {"role": "user", "content": user_message},
             ],
             response_format={"type": "json_object"},
-            temperature=0
+            temperature=0,
         )
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": user_message}
-        ],
-        response_format={"type": "json_object"},
-        temperature=0
-    )
     parsed = json.loads(response.choices[0].message.content)
     parsed = enforce_consistency(parsed)
     if not allow_secondary_classifications:
         parsed["secondary_classifications"] = []
     parsed = enforce_context_metadata(parsed, context_available, context_type)
     return parsed
-
 
 def run_consistency_suite(api_key: str) -> dict:
     """Internal consistency check against illustrative benchmark examples.
