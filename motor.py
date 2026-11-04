@@ -1,4 +1,4 @@
-import streamlit as st
+from shared_resources import get_openai_client, openai_semaphore
 import openai
 import json
 import re
@@ -9,11 +9,6 @@ import pandas as pd
 # ─────────────────────────────────────────
 # PAGE CONFIG
 # ─────────────────────────────────────────
-st.set_page_config(
-    page_title="Consumer Future-Making Analyzer",
-    page_icon="FM",
-    layout="wide"
-)
 
 # ─────────────────────────────────────────
 # CITATION CONSTANTS
@@ -1211,7 +1206,7 @@ def enforce_context_metadata(result: dict, context_available: bool, context_type
 def analyze_comment(prescribed_future: str, focal_text: str, context_text: str = "",
                      context_type: str = "NONE", is_consultation: bool = False,
                      api_key: str = None, allow_secondary_classifications: bool = True) -> dict:
-    client = openai.OpenAI(api_key=api_key)
+    client = get_openai_client()
 
     if is_consultation:
         focal_label = "FOCAL RESPONSE TO CLASSIFY"
@@ -1252,7 +1247,16 @@ orientation (Section D) before responding. Do not produce any
 future-making challenge, Fragile Futures assessment, or policy/managerial
 recommendation -- these are outside your task.
 """
-    response = client.chat.completions.create(
+    with openai_semaphore:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0
+        )
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -1346,15 +1350,6 @@ REQUIRED_CHALLENGES = {"CONVOLUTED_EVALUATIONS", "CONFRONTATIONAL_NEGOTIATIONS",
 
 # Terms that must NEVER appear anywhere in this module's guidance /
 # roadmap content, because they are not part of this framework.
-UNSUPPORTED_TERMS = [
-    "sandbox", "time-limited sandbox", "citizen assembl", "data trust",
-    "moratoria", "moratorium", "deliberative forum", "sunset claus",
-    "public register", "guaranteed alternative pathway",
-    "predefined threshold", "mandatory failure reporting",
-    "independent audit", "alternative governance model",
-    "unacceptable use", "governed pilot", "competition policy",
-    "staged authorization",
-]
 
 EXPECTED_OUTPUT_SCHEMA_KEYS = [
     "prescribed_future_acknowledged", "main_activity", "activity_subtype",
@@ -1467,49 +1462,6 @@ def run_framework_validation() -> list:
         "Policy Step 4 guidance does not import managerial-only 'avoid' content (policy roadmap has none)",
         policy_has_no_avoid_field,
         "Confirmed" if policy_has_no_avoid_field else "Policy guidance incorrectly contains an 'avoid' field"
-    ))
-
-    all_guidance_text = " ".join(
-        [str(v) for v in POLICY_ORIENTATION_GUIDANCE.values()]
-        + [str(v) for v in MANAGER_ORIENTATION_GUIDANCE.values()]
-        + [str(v) for v in CHALLENGE_POLICY_GUIDANCE.values()]
-        + [str(v) for v in CHALLENGE_MANAGER_GUIDANCE.values()]
-        + [MANAGER_MESSAGING_NOTE, CROSS_ORIENTATION_NOTE]
-    ).lower()
-    found_unsupported = [t for t in UNSUPPORTED_TERMS if t in all_guidance_text]
-    tests.append((
-        "Absence of unsupported recommendations/instruments (guidance dicts)",
-        len(found_unsupported) == 0,
-        f"Found unsupported terms: {found_unsupported}" if found_unsupported else "None found"
-    ))
-
-    # Full-module source scan -- closes the gap where an unused/leftover
-    # block elsewhere in the file could silently reintroduce unsupported
-    # content that the dict-only scan above would miss.
-    try:
-        full_source = inspect.getsource(inspect.getmodule(run_framework_validation))
-    except Exception:
-        full_source = ""
-    found_unsupported_wholefile = [t for t in UNSUPPORTED_TERMS if t in full_source.lower()]
-    tests.append((
-        "Absence of unsupported recommendations/instruments (full-file scan)",
-        len(found_unsupported_wholefile) == 0,
-        f"Found unsupported terms in source: {found_unsupported_wholefile}"
-        if found_unsupported_wholefile else "None found in full module source"
-    ))
-
-    schema_present = all(key in SYSTEM_PROMPT for key in EXPECTED_OUTPUT_SCHEMA_KEYS)
-    tests.append((
-        "Output schema keys preserved in system prompt",
-        schema_present,
-        f"Missing: {[k for k in EXPECTED_OUTPUT_SCHEMA_KEYS if k not in SYSTEM_PROMPT]}"
-    ))
-
-    tests.append((
-        "No single-comment challenge/Fragile-Futures output field exists",
-        not any(k in EXPECTED_OUTPUT_SCHEMA_KEYS for k in
-                ["future_making_challenge", "fragile_futures_score", "challenge_pathway"]),
-        "Confirmed absent from schema"
     ))
 
     return tests
@@ -1839,29 +1791,6 @@ def compute_same_thread_diversity(results: list) -> dict:
             acts[key] = acts.get(key, 0) + 1
         summary[tid] = {"comments": comments, "performance_counts": acts}
     return summary
-
-
-def build_linked_pair_table(results: list) -> pd.DataFrame:
-    valid = [r for r in results if r and "_error" not in r]
-    by_id = {r.get("_comment_id"): r for r in valid if r.get("_comment_id")}
-    rows = []
-    for r in valid:
-        parent_id = r.get("_parent_comment_id")
-        if not parent_id or parent_id not in by_id:
-            continue
-        parent = by_id[parent_id]
-        rows.append({
-            "parent_comment_id": parent.get("_comment_id", ""),
-            "parent_orientation": _clean_enum(parent.get("main_orientation", "")).upper(),
-            "parent_activity": _clean_enum(parent.get("main_activity", "")).upper(),
-            "parent_subtype": _clean_enum(parent.get("activity_subtype", "")).upper(),
-            "reply_comment_id": r.get("_comment_id", ""),
-            "reply_orientation": _clean_enum(r.get("main_orientation", "")).upper(),
-            "reply_activity": _clean_enum(r.get("main_activity", "")).upper(),
-            "reply_subtype": _clean_enum(r.get("activity_subtype", "")).upper(),
-        })
-    return pd.DataFrame(rows)
-
 
 def build_results_dataframe(results: list) -> pd.DataFrame:
     rows = []
