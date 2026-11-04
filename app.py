@@ -1,6 +1,6 @@
 """
-Interfaz de Consumer Future-Making Analyzer.
-Usa el motor de análisis de motor.py.
+Consumer Future-Making Analyzer - user interface.
+Analysis logic lives in motor.py.
 """
 import os
 import hmac
@@ -17,9 +17,9 @@ st.set_page_config(
 )
 
 from motor import (
-    PAPER_TITLE, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE, CONTEXT_TYPE_CHOICES,
-    ORIENTATIONS, CHALLENGE_DEFINITIONS, PF_EV, EXAMPLES,
-    POLICY_ROADMAP_STEPS, MANAGER_ROADMAP_STEPS,
+    HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE, PAPER_TITLE, PAPER_URL,
+    CONTEXT_TYPE_CHOICES, ORIENTATIONS, ACTIVITY_META, CHALLENGE_DEFINITIONS,
+    PF_EV, POLICY_ROADMAP_STEPS, MANAGER_ROADMAP_STEPS,
     POLICY_ORIENTATION_GUIDANCE, MANAGER_ORIENTATION_GUIDANCE,
     CHALLENGE_POLICY_GUIDANCE, CHALLENGE_MANAGER_GUIDANCE,
     MANAGER_MESSAGING_NOTE, CROSS_ORIENTATION_NOTE,
@@ -27,37 +27,40 @@ from motor import (
     build_comment_records_from_csv, build_comment_records_from_paragraphs,
     build_comment_records_from_user_labels, build_comment_records_from_consultation,
     compute_dominant_distributions, compute_challenge_review_candidates,
+    compute_evenly_spaced_sample_indices,
     run_consistency_suite, run_framework_validation, _clean_enum,
+    has_comment_text_column, detect_user_labeled_exchange,
 )
 
-MAX_COMENTARIOS = int(os.environ.get("MAX_COMENTARIOS", "300"))
+MAX_COMMENTS = int(os.environ.get("MAX_COMENTARIOS", "300"))
+EST_COST_PER_COMMENT = 0.00075
 
 
 # ─────────────────────────────────────────
-# ACCESO CON CONTRASEÑA
+# PASSWORD GATE
 # ─────────────────────────────────────────
 def check_password():
-    if st.session_state.get("autenticado"):
+    if st.session_state.get("authenticated"):
         return
     st.title("Consumer Future-Making Analyzer")
-    clave_correcta = os.environ.get("APP_PASSWORD", "")
-    if not clave_correcta:
-        st.error("Falta la variable APP_PASSWORD en el servidor. Pide al administrador que la configure.")
+    expected = os.environ.get("APP_PASSWORD", "")
+    if not expected:
+        st.error("The server is missing the APP_PASSWORD variable. Ask the administrator to set it.")
         st.stop()
-    ingresada = st.text_input("Contraseña de acceso", type="password")
-    if st.button("Entrar"):
-        if hmac.compare_digest(ingresada.encode("utf-8"), clave_correcta.encode("utf-8")):
-            st.session_state["autenticado"] = True
+    entered = st.text_input("Access password", type="password")
+    if st.button("Enter"):
+        if hmac.compare_digest(entered.encode("utf-8"), expected.encode("utf-8")):
+            st.session_state["authenticated"] = True
             st.rerun()
         else:
-            st.error("Contraseña incorrecta.")
+            st.error("Incorrect password.")
     st.stop()
 
 
 # ─────────────────────────────────────────
-# PRESENTACIÓN DE UN RESULTADO
+# SINGLE RESULT DISPLAY
 # ─────────────────────────────────────────
-def mostrar_resultado(r: dict):
+def show_result(r: dict):
     ori = _clean_enum(r.get("main_orientation", "")).upper()
     act = _clean_enum(r.get("main_activity", "")).upper()
     sub = _clean_enum(r.get("activity_subtype", "")).upper()
@@ -68,29 +71,29 @@ def mostrar_resultado(r: dict):
     st.markdown(
         f"<div style='background:{bg};border-left:6px solid {color};"
         f"padding:12px 16px;border-radius:6px'>"
-        f"<b>Orientación:</b> {html.escape(ori)} &nbsp;|&nbsp; "
-        f"<b>Actividad principal:</b> {html.escape(act)} / {html.escape(sub)}"
+        f"<b>Orientation:</b> {html.escape(ori)} &nbsp;|&nbsp; "
+        f"<b>Dominant activity:</b> {html.escape(act)} / {html.escape(sub)}"
         f"</div>",
         unsafe_allow_html=True,
     )
 
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("**Justificación de la actividad**")
+        st.markdown("**Activity rationale**")
         st.write(str(r.get("activity_rationale", "")))
-        st.markdown("**Justificación de la orientación**")
+        st.markdown("**Orientation rationale**")
         st.write(str(r.get("orientation_rationale", "")))
     with col2:
-        st.markdown("**Narrativa identificada:** " + str(r.get("narrative_identified", "")))
-        st.markdown("**Emociones:** " + str(r.get("emotions_identified", "")))
-        st.markdown("**Temporalidad:** " + str(r.get("temporality_identified", "")))
-        st.markdown("**Condiciones de adopción:** " + str(r.get("notable_conditions_of_adoption", "")))
-        st.markdown("**Texto de apoyo:** " + str(r.get("supporting_text", "")))
+        st.markdown("**Narrative identified:** " + str(r.get("narrative_identified", "")))
+        st.markdown("**Emotions:** " + str(r.get("emotions_identified", "")))
+        st.markdown("**Temporality:** " + str(r.get("temporality_identified", "")))
+        st.markdown("**Conditions of adoption:** " + str(r.get("notable_conditions_of_adoption", "")))
+        st.markdown("**Supporting text:** " + str(r.get("supporting_text", "")))
 
-    secundarias = r.get("secondary_classifications") or []
-    if secundarias:
-        st.markdown("**Clasificaciones secundarias**")
-        for s in secundarias:
+    secondary = r.get("secondary_classifications") or []
+    if secondary:
+        st.markdown("**Secondary classifications**")
+        for s in secondary:
             if isinstance(s, dict):
                 st.markdown(
                     f"- {s.get('activity', '')} / {s.get('activity_subtype', '')} "
@@ -98,278 +101,292 @@ def mostrar_resultado(r: dict):
                 )
 
     if r.get("context_note"):
-        st.markdown("**Nota sobre el contexto:** " + str(r.get("context_note")))
+        st.markdown("**Context note:** " + str(r.get("context_note")))
     if r.get("input_scope_warning"):
-        st.warning("Advertencia: " + str(r.get("input_scope_warning")))
+        st.warning("Input-scope note: " + str(r.get("input_scope_warning")))
 
     if ori in POLICY_ORIENTATION_GUIDANCE:
-        with st.expander("Orientación para la política (Paso 2 y 4 del marco)"):
+        with st.expander("Policy guidance for this orientation (Steps 2 and 4)"):
             g = POLICY_ORIENTATION_GUIDANCE[ori]
             st.write(g["lens"])
             st.write(g["implications"])
-            st.markdown("**Qué monitorear:**")
+            st.markdown("**What to monitor:**")
             for m in g["monitor"]:
                 st.markdown(f"- {m}")
-            st.markdown(f"**Objetivo:** {g['objective']}")
+            st.markdown(f"**Objective:** {g['objective']}")
 
-        with st.expander("Orientación para la gestión (Paso 2 y 4 del marco)"):
+        with st.expander("Managerial guidance for this orientation (Steps 2 and 4)"):
             g = MANAGER_ORIENTATION_GUIDANCE[ori]
             st.write(g["lens"])
             st.write(g["implications"])
-            st.markdown("**Qué monitorear:**")
+            st.markdown("**What to monitor:**")
             for m in g["monitor"]:
                 st.markdown(f"- {m}")
-            st.markdown(f"**Objetivo:** {g['objective']}")
-            st.markdown(f"**Evitar:** {g['avoid']}")
+            st.markdown(f"**Objective:** {g['objective']}")
+            st.markdown(f"**Avoid:** {g['avoid']}")
 
     st.caption(INTERPRETIVE_USE_NOTE)
 
 
 # ─────────────────────────────────────────
-# PESTAÑA 1: UN COMENTARIO
+# TAB 1: SINGLE COMMENT
 # ─────────────────────────────────────────
-def pestana_individual():
-    st.subheader("Analizar un comentario")
-    pf = st.text_area("Futuro prescrito por la intervención", value=PF_EV, height=100, key="pf_ind")
+def tab_single():
+    st.subheader("Analyze a single comment")
+    pf = st.text_area("Prescribed future", value=PF_EV, height=100, key="pf_single")
 
-    etiquetas = [label for label, _, _ in CONTEXT_TYPE_CHOICES]
-    etiqueta = st.selectbox("Tipo de contexto", etiquetas, key="ctx_ind")
-    tipo = next(code for label, code, _ in CONTEXT_TYPE_CHOICES if label == etiqueta)
-    descripcion = next(desc for label, _, desc in CONTEXT_TYPE_CHOICES if label == etiqueta)
-    st.caption(descripcion)
+    labels = [label for label, _, _ in CONTEXT_TYPE_CHOICES]
+    label = st.selectbox("Context type", labels, key="ctx_single")
+    ctype = next(code for lab, code, _ in CONTEXT_TYPE_CHOICES if lab == label)
+    description = next(desc for lab, _, desc in CONTEXT_TYPE_CHOICES if lab == label)
+    st.caption(description)
 
-    contexto = st.text_area("Contexto (opcional)", height=120, key="contexto_ind")
-    comentario = st.text_area("Comentario a clasificar", height=160, key="coment_ind")
+    context = st.text_area("Context (optional)", height=120, key="context_single")
+    comment = st.text_area("Focal comment to classify", height=160, key="comment_single")
 
-    if st.button("Clasificar", type="primary", key="btn_ind"):
-        if not comentario.strip():
-            st.warning("Escribe o pega un comentario antes de clasificar.")
+    if st.button("Classify", type="primary", key="btn_single"):
+        if not comment.strip():
+            st.warning("Please type or paste a comment before classifying.")
             return
-        ctype = tipo if contexto.strip() else "NONE"
-        with st.spinner("Analizando el comentario..."):
+        effective_ctype = ctype if context.strip() else "NONE"
+        is_consultation = ctype == "CONSULTATION_PROMPT"
+        with st.spinner("Analyzing the comment..."):
             try:
-                r = analyze_comment(pf, comentario.strip(), contexto.strip(), ctype, False, None, True)
+                r = analyze_comment(
+                    pf.strip(), comment.strip(), context.strip(),
+                    effective_ctype, is_consultation, None, False,
+                )
             except Exception as e:
-                st.error(f"No se pudo completar el análisis: {e}")
+                st.error(f"The analysis could not be completed: {e}")
                 return
-        mostrar_resultado(r)
+        show_result(r)
         st.download_button(
-            "Descargar resultado (JSON)",
+            "Download result (JSON)",
             data=json.dumps(r, ensure_ascii=False, indent=2),
-            file_name="resultado.json",
+            file_name="result.json",
             mime="application/json",
         )
 
 
 # ─────────────────────────────────────────
-# PESTAÑA 2: VARIOS COMENTARIOS
+# TAB 2: MULTIPLE COMMENTS
 # ─────────────────────────────────────────
-def pestana_documento():
-    st.subheader("Mapear orientaciones en varios comentarios")
-    pf = st.text_area("Futuro prescrito por la intervención", value=PF_EV, height=100, key="pf_doc")
+def tab_multiple():
+    st.subheader("Map orientations across several comments")
+    pf = st.text_area("Prescribed future", value=PF_EV, height=100, key="pf_multi")
 
-    origen = st.radio(
-        "Origen de los comentarios",
+    source = st.radio(
+        "Source of the comments",
         [
-            "Archivo CSV (columna comment_text, text o comment)",
-            "Texto pegado (comentarios separados por una línea en blanco)",
-            "Conversación con etiquetas 'User 1:', 'User 2:', etc.",
+            "CSV file (column comment_text, text, or comment)",
+            "Pasted text (comments separated by a blank line)",
+            "Conversation with labels 'User 1:', 'User 2:', etc.",
         ],
-        key="origen_doc",
+        key="source_multi",
     )
-    es_consulta = st.checkbox("Son respuestas a una consulta pública", key="es_consulta")
-    pregunta = ""
-    if es_consulta:
-        pregunta = st.text_area("Pregunta o propuesta de la consulta", height=100, key="pregunta")
+    is_consultation = st.checkbox("These are responses to a public consultation", key="is_consult")
+    consult_question = ""
+    if is_consultation:
+        consult_question = st.text_area(
+            "Consultation question or proposal (used as context for every response)",
+            height=100, key="consult_question",
+        )
 
     records = []
-    if origen.startswith("Archivo"):
-        archivo = st.file_uploader("Sube el archivo CSV", type=["csv"], key="csv")
-        if archivo is not None:
+    if source.startswith("CSV"):
+        uploaded = st.file_uploader("Upload the CSV file", type=["csv"], key="csv_upload")
+        if uploaded is not None:
             try:
-                df = pd.read_csv(archivo)
-                records = build_comment_records_from_csv(df)
+                df = pd.read_csv(uploaded)
+                if not has_comment_text_column(df):
+                    st.error("The CSV needs a column named comment_text, text, or comment.")
+                else:
+                    records = build_comment_records_from_csv(df)
             except Exception as e:
-                st.error(f"No se pudo leer el CSV: {e}")
+                st.error(f"The CSV could not be read: {e}")
     else:
-        texto = st.text_area("Pega aquí los comentarios", height=250, key="texto_doc")
-        if origen.startswith("Texto") and texto.strip():
-            if es_consulta:
-                records = build_comment_records_from_consultation(texto)
+        text = st.text_area("Paste the comments here", height=250, key="text_multi")
+        if text.strip():
+            if source.startswith("Conversation"):
+                records = build_comment_records_from_user_labels(text)
+                if not records:
+                    st.warning("Found fewer than two 'User N:' labels. Check the format.")
+            elif is_consultation:
+                records = build_comment_records_from_consultation(text)
             else:
-                records = build_comment_records_from_paragraphs(texto)
-        elif origen.startswith("Conversación") and texto.strip():
-            records = build_comment_records_from_user_labels(texto)
+                records = build_comment_records_from_paragraphs(text)
 
     if not records:
-        st.info("Aún no hay comentarios para analizar.")
+        st.info("No comments to analyze yet.")
         return
 
-    st.write(f"Comentarios detectados: **{len(records)}**")
-    if len(records) > MAX_COMENTARIOS:
+    st.write(f"Comments detected: **{len(records)}**")
+    if len(records) > MAX_COMMENTS:
         st.warning(
-            f"Se analizarán solo los primeros {MAX_COMENTARIOS} comentarios "
-            "para proteger el uso de la API. Divide el archivo en partes si necesitas más."
+            f"Only the first {MAX_COMMENTS} comments will be analyzed, to control API costs. "
+            "Split the file into parts if you need more."
         )
-        records = records[:MAX_COMENTARIOS]
+        records = records[:MAX_COMMENTS]
 
-    with st.expander("Vista previa de los comentarios"):
+    with st.expander("Preview the comments"):
         st.dataframe(pd.DataFrame([
-            {"ID": r["comment_id"], "Autor": r.get("author", ""), "Comentario": r["comment_text"]}
+            {"ID": r["comment_id"], "Author": r.get("author", ""), "Comment": r["comment_text"]}
             for r in records
         ]), use_container_width=True)
 
-    if not st.button("Analizar comentarios", type="primary", key="btn_doc"):
+    if not st.button("Analyze comments", type="primary", key="btn_multi"):
         return
 
-    # Contexto para cada comentario (hilo, respuesta padre, consulta)
     by_id, order = index_threads(records)
     for rec in records:
-        ctx, ctype, _ = build_context(rec, by_id, order, pregunta, es_consulta)
+        ctx, ctype, _ = build_context(rec, by_id, order, consult_question, is_consultation)
         rec["context_text"] = ctx
         rec["context_type"] = ctype
-        rec["is_consultation"] = es_consulta
+        rec["is_consultation"] = is_consultation
 
-    barra = st.progress(0, text="Iniciando análisis...")
+    progress = st.progress(0, text="Starting analysis...")
     try:
-        results = analyze_document(records, pf, None, barra)
+        results = analyze_document(records, pf.strip(), None, progress)
     except Exception as e:
-        st.error(f"Ocurrió un error durante el análisis: {e}")
+        st.error(f"An error occurred during the analysis: {e}")
         return
-    barra.empty()
+    progress.empty()
 
-    autor_por_id = {r["comment_id"]: r.get("author", "") for r in records}
-    filas = []
+    author_by_id = {r["comment_id"]: r.get("author", "") for r in records}
+    rows = []
     for r in results:
-        filas.append({
+        rows.append({
             "ID": r.get("_comment_id", ""),
-            "Autor": autor_por_id.get(r.get("_comment_id"), ""),
-            "Comentario": r.get("_comment_text", ""),
-            "Orientación": _clean_enum(r.get("main_orientation", "")),
-            "Actividad": _clean_enum(r.get("main_activity", "")),
-            "Subtipo": _clean_enum(r.get("activity_subtype", "")),
-            "Texto de apoyo": r.get("supporting_text", ""),
+            "Author": author_by_id.get(r.get("_comment_id"), ""),
+            "Comment": r.get("_comment_text", ""),
+            "Orientation": _clean_enum(r.get("main_orientation", "")),
+            "Activity": _clean_enum(r.get("main_activity", "")),
+            "Subtype": _clean_enum(r.get("activity_subtype", "")),
+            "Supporting text": r.get("supporting_text", ""),
             "Error": r.get("_error", ""),
         })
-    df_result = pd.DataFrame(filas)
+    df_result = pd.DataFrame(rows)
 
-    st.success(f"Análisis terminado: {len(results)} comentarios.")
+    st.success(f"Analysis complete: {len(results)} comments.")
     st.dataframe(df_result, use_container_width=True)
-
     st.download_button(
-        "Descargar resultados (CSV)",
+        "Download results (CSV)",
         data=df_result.to_csv(index=False).encode("utf-8-sig"),
-        file_name="orientaciones_resultados.csv",
+        file_name="orientation_results.csv",
         mime="text/csv",
     )
 
     dist = compute_dominant_distributions(results)
-    st.markdown("### Distribución")
+    st.markdown("### Distribution")
     if dist["orientation_counts"]:
-        st.bar_chart(pd.Series(dist["orientation_counts"], name="Comentarios"))
+        st.bar_chart(pd.Series(dist["orientation_counts"], name="Comments"))
     if dist["activity_counts"]:
-        st.write("Actividades:", dist["activity_counts"])
+        st.write("Activities:", dist["activity_counts"])
 
-    st.markdown("### Revisión humana de desafíos (vinculados entre comentarios)")
+    st.markdown("### Human review of future-making challenges")
     st.caption(
-        "Estas son pistas para revisar a mano, no diagnósticos automáticos. "
-        "Los desafíos solo se interpretan en patrones entre comentarios relacionados."
+        "These are leads for manual review, not automatic diagnoses. Challenges are "
+        "only interpreted across linked comments."
     )
-    candidatos = compute_challenge_review_candidates(results)
-    for clave, meta in CHALLENGE_DEFINITIONS.items():
-        n = len(candidatos.get(clave, []))
-        with st.expander(f"{meta['label']}: {n} pares vinculados para revisar"):
-            st.write(CHALLENGE_POLICY_GUIDANCE[clave]["diagnostic_question"])
-            st.write(CHALLENGE_POLICY_GUIDANCE[clave]["action"])
+    candidates = compute_challenge_review_candidates(results)
+    for key, meta in CHALLENGE_DEFINITIONS.items():
+        n = len(candidates.get(key, []))
+        with st.expander(f"{meta['label']}: {n} linked pair(s) to review"):
+            st.write(CHALLENGE_POLICY_GUIDANCE[key]["diagnostic_question"])
+            st.write(CHALLENGE_POLICY_GUIDANCE[key]["action"])
 
-    with st.expander("Notas de interpretación"):
+    with st.expander("Interpretation notes"):
         st.write(MANAGER_MESSAGING_NOTE)
         st.write(CROSS_ORIENTATION_NOTE)
     st.caption(INTERPRETIVE_USE_NOTE)
 
 
 # ─────────────────────────────────────────
-# PESTAÑA 3: MARCO (roadmaps)
+# TAB 3: ROADMAPS
 # ─────────────────────────────────────────
-def pestana_marco():
-    st.subheader("Hoja de ruta para la política (7 pasos)")
-    for num, titulo, texto in POLICY_ROADMAP_STEPS:
-        st.markdown(f"**{num}. {titulo}**")
-        st.write(texto)
+def tab_roadmaps():
+    st.subheader("Policymaking Roadmap (7 steps)")
+    for num, title, text in POLICY_ROADMAP_STEPS:
+        st.markdown(f"**Step {num}. {title}**")
+        st.write(text)
 
-    st.subheader("Hoja de ruta para la gestión (6 pasos)")
-    for num, titulo, texto in MANAGER_ROADMAP_STEPS:
-        st.markdown(f"**{num}. {titulo}**")
-        st.write(texto)
+    st.subheader("Managerial Roadmap (6 steps)")
+    for num, title, text in MANAGER_ROADMAP_STEPS:
+        st.markdown(f"**Step {num}. {title}**")
+        st.write(text)
 
+    st.caption(f'"{PAPER_TITLE}" | Read the paper: {PAPER_URL}')
     st.caption(INTERPRETIVE_USE_NOTE)
 
 
 # ─────────────────────────────────────────
-# PESTAÑA 4: HERRAMIENTAS DE DESARROLLADOR (protegidas)
+# TAB 4: DEVELOPER TOOLS (password protected)
 # ─────────────────────────────────────────
-def pestana_desarrollador():
-    clave_dev = os.environ.get("DEV_PASSWORD", "")
-    if not clave_dev:
-        st.info("Herramientas de desarrollador desactivadas. Falta la variable DEV_PASSWORD.")
+def tab_developer():
+    dev_password = os.environ.get("DEV_PASSWORD", "")
+    if not dev_password:
+        st.info("Developer tools are disabled. The DEV_PASSWORD variable is not set.")
         return
     if not st.session_state.get("dev_ok"):
-        p = st.text_input("Contraseña de desarrollador", type="password", key="dev_pw")
-        if st.button("Desbloquear", key="dev_btn"):
-            if hmac.compare_digest(p.encode("utf-8"), clave_dev.encode("utf-8")):
+        entered = st.text_input("Developer password", type="password", key="dev_pw")
+        if st.button("Unlock", key="dev_unlock"):
+            if hmac.compare_digest(entered.encode("utf-8"), dev_password.encode("utf-8")):
                 st.session_state["dev_ok"] = True
                 st.rerun()
             else:
-                st.error("Contraseña incorrecta.")
+                st.error("Incorrect password.")
         return
 
-    st.subheader("Pruebas de estructura del marco (sin usar la API)")
-    if st.button("Ejecutar pruebas de estructura", key="dev_val"):
-        for nombre, ok, detalle in run_framework_validation():
-            st.write(f"{'✅' if ok else '❌'} {nombre} — {detalle}")
+    st.subheader("Framework structure tests (no API calls)")
+    if st.button("Run structure tests", key="dev_structure"):
+        tests = run_framework_validation()
+        passed = sum(1 for _, ok, _ in tests if ok)
+        st.metric("Tests passed", f"{passed} / {len(tests)}")
+        for name, ok, detail in tests:
+            st.write(f"{'✅' if ok else '❌'} {name} — {detail}")
 
-    st.subheader("Consistencia con ejemplos de referencia (usa la API)")
+    st.subheader("Consistency check against reference examples (uses the API)")
     st.caption(
-        "Verificación interna con ejemplos ilustrativos. No constituye validación empírica "
-        "ni fiabilidad entre codificadores."
+        "Internal check against illustrative examples. It is not empirical validation "
+        "and does not measure intercoder reliability."
     )
-    if st.button("Ejecutar consistencia", key="dev_cons"):
-        with st.spinner("Ejecutando ejemplos..."):
-            resumen = run_consistency_suite(None)
-        st.write(f"Acuerdo general: {resumen['overall_agreement']:.0%}")
+    if st.button("Run consistency check", key="dev_consistency"):
+        with st.spinner("Running the reference examples..."):
+            report = run_consistency_suite(None)
+        st.write(f"Overall exact-match agreement: {report['overall_agreement']:.0%}")
         st.dataframe(pd.DataFrame([
             {
-                "Ejemplo": r["example"],
-                "Esperado": " / ".join(r["expected"]),
-                "Predicho": " / ".join(str(x) for x in r["predicted"]),
-                "Coincide": r["match"],
+                "Example": r["example"],
+                "Expected": " / ".join(str(x) for x in r["expected"]),
+                "Predicted": " / ".join(str(x) for x in r["predicted"]),
+                "Match": r["match"],
                 "Error": r.get("error", ""),
             }
-            for r in resumen["results"]
+            for r in report["results"]
         ]), use_container_width=True)
 
 
 # ─────────────────────────────────────────
-# APLICACIÓN
+# APP
 # ─────────────────────────────────────────
 check_password()
 
 st.title("Consumer Future-Making Analyzer")
-with st.expander("Acerca de esta herramienta"):
+with st.expander("About this tool"):
     st.markdown(HOMEPAGE_DESCRIPTION)
     st.caption(INTERPRETIVE_USE_NOTE)
 
 tab1, tab2, tab3, tab4 = st.tabs([
-    "Comentario individual",
-    "Varios comentarios",
-    "Hojas de ruta",
-    "Desarrollador",
+    "Single comment",
+    "Multiple comments",
+    "Roadmaps",
+    "Developer",
 ])
 with tab1:
-    pestana_individual()
+    tab_single()
 with tab2:
-    pestana_documento()
+    tab_multiple()
 with tab3:
-    pestana_marco()
+    tab_roadmaps()
 with tab4:
-    pestana_desarrollador()
+    tab_developer()
