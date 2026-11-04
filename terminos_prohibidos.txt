@@ -1,0 +1,23 @@
+# Una frase por línea. Las líneas que empiezan con # se ignoran.
+sandbox
+moratoria
+moratorium
+asamblea ciudadana
+asambleas ciudadanas
+citizen assembl
+data trust
+fideicomiso de datos
+foro deliberativo
+deliberative forum
+cláusula de caducidad
+sunset clause
+impact assessment
+evaluación de impacto
+registro público
+public register
+independent audit
+auditoría independiente
+competition policy
+política de competencia
+staged authorization
+autorización escalonada
