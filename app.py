@@ -281,7 +281,17 @@ def tab_multiple():
     if dist["orientation_counts"]:
         st.bar_chart(pd.Series(dist["orientation_counts"], name="Comments"))
     if dist["activity_counts"]:
-        st.write("Activities:", dist["activity_counts"])
+        st.markdown("**Activities**")
+        st.dataframe(
+            pd.DataFrame(list(dist["activity_counts"].items()), columns=["Activity", "Comments"]),
+            hide_index=True,
+        )
+    if dist["subtype_counts"]:
+        st.markdown("**Activity subtypes**")
+        st.dataframe(
+            pd.DataFrame(list(dist["subtype_counts"].items()), columns=["Activity / subtype", "Comments"]),
+            hide_index=True,
+        )
 
     st.markdown("### Human review of future-making challenges")
     st.caption(
