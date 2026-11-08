@@ -19,19 +19,16 @@ st.set_page_config(
 )
 
 from motor import (
-    CHALLENGE_DEFINITIONS, CHALLENGE_POLICY_GUIDANCE, CONTEXT_TYPE_CHOICES,
-    CROSS_ORIENTATION_NOTE, DEFAULT_THREAD, DEMO_BY_ID, DEMO_CONVERSATION,
-    DEMO_CONVERSATION_REFERENCE, DEMO_EXAMPLES, EST_COST_PER_COMMENT,
-    EXAMPLE_DISCLAIMER, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE,
-    LABELED_THREAD, MANAGER_MESSAGING_NOTE, MANAGER_ORIENTATION_GUIDANCE,
-    MAX_COMMENTS, ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV,
+    CONTEXT_TYPE_CHOICES, CROSS_ORIENTATION_NOTE, DEMO_BY_ID, DEMO_CONVERSATION,
+    DEMO_CONVERSATION_REFERENCE, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE,
+    LABELED_THREAD, MANAGER_MESSAGING_NOTE, MANAGER_ORIENTATION_GUIDANCE, MAX_COMMENTS,
+    ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV,
     POLICY_ORIENTATION_GUIDANCE, analyze_comment, analyze_document,
     build_comment_records_from_consultation, build_comment_records_from_csv,
     build_comment_records_from_paragraphs, build_comment_records_from_user_labels,
-    compute_challenge_review_candidates, compute_dominant_distributions,
-    ensure_unique_ids, has_comment_text_column, orientation_coexistence,
-    orientations_by_thread, prepare_records, pseudonymize, select_within_limit,
-    _clean_enum,
+    compute_dominant_distributions, ensure_unique_ids, has_comment_text_column,
+    orientation_coexistence, orientations_by_thread, prepare_records, pseudonymize,
+    select_within_limit, _clean_enum,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -41,12 +38,91 @@ CTX_CODE = {label: code for label, code, _ in CONTEXT_TYPE_CHOICES}
 CTX_LABEL = {code: label for label, code, _ in CONTEXT_TYPE_CHOICES}
 CTX_DESC = {code: desc for _, code, desc in CONTEXT_TYPE_CHOICES}
 
-SOURCE_CSV = "CSV file (column comment_text, text, or comment)"
-SOURCE_PASTE = "Pasted text (comments separated by a blank line)"
-SOURCE_CONV = "Conversation with labels 'User 1:', 'User 2:'"
-SOURCE_DEMO = "Paper example: forum conversation (4 users)"
-
 ORI_LABEL = {o: o.title() for o in ORIENTATION_ORDER}
+
+EXAMPLE_NOTE = (
+    "These examples show how the tool works. The same comments are included in the model's "
+    "instructions, so they do not measure the tool's accuracy."
+)
+
+PRIVACY_NOTICE = (
+    "**Privacy notice.** Do not upload or paste Personally Identifiable Information (PII), such as "
+    "names, email addresses, phone numbers, home addresses, account handles, or identification numbers. "
+    "Removing PII is a standard rule designed to protect user data and comply with privacy laws. "
+    "Comments are sent to an external AI service (OpenAI) for classification."
+)
+
+PII_CONSENT_LABEL = "I confirm that this text contains no Personally Identifiable Information (PII)."
+
+# ─────────────────────────────────────────
+# EXAMPLES (two single-comment examples and two conversation examples)
+# ─────────────────────────────────────────
+SINGLE_EXAMPLE_IDS = ["johnny", "clara"]
+
+CONV2_TEXT = """User 1: I bought my EV because it was faster than the comparable ICE car, more spacious, has better range... at least $600 cheaper per quarter on "fuel," requires almost no maintenance or servicing... and gets regular improvements via software updates. It's the most brutally fast and best handling car I ever had!
+
+User 2: In the building where I live there are 150 underground carparks. All full. There is no reserve capacity in the building to install charging points for 1% of that. Nor any in the feed from the street, nor any in the feed to the suburb... I have no objection to eventually driving an EV, but it's just not happening any time soon. The infrastructure is decades away.
+
+User 3: I won't be getting one, I'll stick to my V8 and my other diesel 4x4...
+
+User 4: Maybe some reliable public transport would be an answer."""
+
+CONV2_REFERENCE = {
+    "user1": {"activity": "ENACTMENT", "subtype": "ACCELERATE", "orientation": "CATALYZER"},
+    "user2": {"activity": "ENACTMENT", "subtype": "DELAY", "orientation": "AMBIVALENT"},
+    "user3": {"activity": "ENACTMENT", "subtype": "PREVENT", "orientation": "RESISTANT"},
+    "user4": {"activity": "ENACTMENT", "subtype": "REROUTE", "orientation": "EXPANDER"},
+}
+
+CONVERSATION_EXAMPLES = {
+    "conv1": {
+        "label": "Example 1: forum exchange on the adoption curve (4 users)",
+        "text": DEMO_CONVERSATION,
+        "reference": DEMO_CONVERSATION_REFERENCE,
+        "source_note": (
+            "Forum exchange quoted in the manuscript. Reference labels are those the manuscript "
+            "assigns to each user."
+        ),
+    },
+    "conv2": {
+        "label": "Example 2: social media thread on competing enactments (4 users)",
+        "text": CONV2_TEXT,
+        "reference": CONV2_REFERENCE,
+        "source_note": (
+            "Social media thread quoted in the manuscript. The manuscript labels this thread by "
+            "orientation only; the activity labels are a proposed coding that researchers should check."
+        ),
+    },
+}
+CONVERSATION_BY_LABEL = {v["label"]: v for v in CONVERSATION_EXAMPLES.values()}
+
+# Manuscript Table 2 (orientation definitions), used as reference in the analysis section.
+TABLE2 = {
+    "CATALYZER": {
+        "narrative": "Urgency narrative",
+        "goal": "Accelerate change toward the prescribed future",
+        "temporality": "The future is close (change is happening now)",
+        "condition": "High degree of alignment between current practices and the prescribed future",
+    },
+    "AMBIVALENT": {
+        "narrative": "Pragmatic narrative",
+        "goal": "Slow down change, delay decisions, balance risks and benefits",
+        "temporality": "The future is contingent (change is uncertain)",
+        "condition": "Limited resources to support change in current practices",
+    },
+    "RESISTANT": {
+        "narrative": "Control narrative",
+        "goal": "Contest the prescribed future, protect the status quo",
+        "temporality": "The future is distant (no change)",
+        "condition": "Low degree of alignment between current practices and the prescribed future",
+    },
+    "EXPANDER": {
+        "narrative": "Bigger picture narrative",
+        "goal": "Expand the prescribed future, propose new pathways and alternative futures",
+        "temporality": "The future is distant (broader change)",
+        "condition": "Mismatch among current practices, normative practices, and those directed by the prescribed future",
+    },
+}
 
 
 # ─────────────────────────────────────────
@@ -73,18 +149,6 @@ def check_password():
 # ─────────────────────────────────────────
 # SHARED COMPONENTS
 # ─────────────────────────────────────────
-def _guidance_expander(title, g, with_avoid=False):
-    with st.expander(title):
-        st.write(g["lens"])
-        st.write(g["implications"])
-        st.markdown("**What to monitor:**")
-        for m in g["monitor"]:
-            st.markdown(f"- {m}")
-        st.markdown(f"**Objective:** {g['objective']}")
-        if with_avoid and g.get("avoid"):
-            st.markdown(f"**Avoid:** {g['avoid']}")
-
-
 def show_result(r: dict, reference: dict = None):
     ori = _clean_enum(r.get("main_orientation", "")).upper()
     act = _clean_enum(r.get("main_activity", "")).upper()
@@ -106,8 +170,8 @@ def show_result(r: dict, reference: dict = None):
         match = (act, sub, ori) == (reference["activity"], reference["subtype"], reference["orientation"])
         verdict = "Matches" if match else "Does not match"
         st.info(
-            f"{verdict} the paper's reference: {reference['orientation'].title()} · "
-            f"{reference['activity'].title()} / {reference['subtype'].title()}. {EXAMPLE_DISCLAIMER}"
+            f"{verdict} the reference classification: {reference['orientation'].title()} · "
+            f"{reference['activity'].title()} / {reference['subtype'].title()}. {EXAMPLE_NOTE}"
         )
 
     col1, col2 = st.columns(2)
@@ -139,10 +203,15 @@ def show_result(r: dict, reference: dict = None):
         st.warning("Input-scope note: " + str(r.get("input_scope_warning")))
 
     if ori in POLICY_ORIENTATION_GUIDANCE:
-        _guidance_expander("Policy guidance for this orientation (Steps 2 and 4)",
-                           POLICY_ORIENTATION_GUIDANCE[ori])
-        _guidance_expander("Managerial guidance for this orientation (Steps 2 and 4)",
-                           MANAGER_ORIENTATION_GUIDANCE[ori], with_avoid=True)
+        with st.expander("Policy guidance for this orientation"):
+            g = POLICY_ORIENTATION_GUIDANCE[ori]
+            st.write(g["implications"])
+            st.markdown(f"**Objective:** {g['objective']}")
+        with st.expander("Managerial guidance for this orientation"):
+            g = MANAGER_ORIENTATION_GUIDANCE[ori]
+            st.write(g["implications"])
+            st.markdown(f"**Objective:** {g['objective']}")
+            st.markdown(f"**Avoid:** {g['avoid']}")
 
     st.caption(INTERPRETIVE_USE_NOTE)
 
@@ -150,10 +219,11 @@ def show_result(r: dict, reference: dict = None):
 # ─────────────────────────────────────────
 # TAB 1: ONE COMMENT
 # ─────────────────────────────────────────
-def _demo_label(demo_id: str) -> str:
-    if not demo_id:
-        return "— Write my own comment —"
-    return DEMO_BY_ID[demo_id]["titulo"]
+def _single_example_label(value: str) -> str:
+    if not value:
+        return "Write my own comment"
+    number = SINGLE_EXAMPLE_IDS.index(value) + 1
+    return f"Example {number}: {DEMO_BY_ID[value]['titulo'].split(':')[0]}"
 
 
 def _load_single_demo():
@@ -167,45 +237,48 @@ def _load_single_demo():
         st.session_state["comment_single"] = ex["comment"]
 
 
-def tab_single():
-    st.subheader("Analyze a single comment")
-    st.caption("Write your own comment or load one of the paper's examples to see how the tool works.")
-
-    st.selectbox(
-        "Paper example (optional)",
-        [""] + list(DEMO_BY_ID),
-        format_func=_demo_label,
-        key="demo_single",
-        on_change=_load_single_demo,
-    )
-    pf = st.text_area("Prescribed future", value=PF_EV, height=100, key="pf_single")
-    label = st.selectbox("Context type", list(CTX_CODE), key="ctx_single")
-    ctype = CTX_CODE[label]
+def _render_example_intro(ex: dict):
+    number = SINGLE_EXAMPLE_IDS.index(ex["id"]) + 1
+    source = ex["titulo"].split(":")[0]
+    st.markdown(f"**Example {number}: {source}**")
+    st.markdown(f"> {ex['comment']}")
+    ctype = ex["context_type"]
+    st.markdown(f"**Context type:** {CTX_LABEL[ctype]}")
     st.caption(CTX_DESC[ctype])
-    context = st.text_area("Context (optional)", height=120, key="context_single")
-    comment = st.text_area("Comment to classify", height=160, key="comment_single")
-    with_secondary = st.checkbox(
-        "Allow secondary classifications (if the comment contains a separable second practice)",
-        key="secondary_single",
-    )
+    st.markdown(f"**Context provided:** {ex['context'] or 'None. The comment is interpreted on its own.'}")
 
-    demo = DEMO_BY_ID.get(st.session_state.get("demo_single", ""))
-    reference = demo["referencia"] if demo and comment.strip() == demo["comment"] else None
-    if demo and reference:
-        with st.expander("Paper's reference classification (no model call)", expanded=True):
-            st.markdown(
-                f"**Orientation:** {reference['orientation'].title()} · "
-                f"**Activity:** {reference['activity'].title()} / {reference['subtype'].title()}"
-            )
-            st.write(demo["nota_paper"])
-            st.caption(EXAMPLE_DISCLAIMER)
 
-    if st.button("Classify", type="primary", key="btn_single"):
+@st.cache_data(show_spinner=False, max_entries=64)
+def _classify_example(pf: str, comment: str, context: str, ctype: str, allow_secondary: bool) -> dict:
+    """Examples are public text from the manuscript, so caching them is safe. Each example
+    calls the model once per server session."""
+    return analyze_comment(pf, comment, context, ctype, False, allow_secondary=allow_secondary)
+
+
+def _show_example_analysis(demo: dict, pf: str, with_secondary: bool):
+    st.markdown("### Analysis")
+    with st.spinner("Analyzing the example..."):
+        try:
+            r = _classify_example(pf, demo["comment"], "", "NONE", with_secondary)
+        except (ValueError, RuntimeError) as e:
+            st.error(str(e))
+            return
+        except Exception:
+            logger.exception("Error while analyzing an example comment")
+            st.error("The analysis could not be completed. Please try again.")
+            return
+    show_result(r, demo["referencia"])
+
+
+def _custom_single_flow(pf, ctype, context, comment, with_secondary):
+    st.markdown("### Analysis")
+    consent = st.checkbox(PII_CONSENT_LABEL, key="pii_single")
+    if st.button("Classify", type="primary", key="btn_single", disabled=not consent):
         if not pf.strip():
             st.warning("Enter the prescribed future before classifying.")
             return
         if not comment.strip():
-            st.warning("Enter or load a comment before classifying.")
+            st.warning("Enter a comment before classifying.")
             return
         effective_ctype = ctype if context.strip() else "NONE"
         with st.spinner("Analyzing the comment..."):
@@ -233,7 +306,7 @@ def tab_single():
     if stored["key"] != current_key:
         st.info("The input changed since the last classification. Classify again to update the result.")
         return
-    show_result(stored["r"], reference)
+    show_result(stored["r"])
     st.download_button(
         "Download result (JSON)",
         data=json.dumps(stored["r"], ensure_ascii=False, indent=2),
@@ -242,14 +315,65 @@ def tab_single():
     )
 
 
+def tab_single():
+    st.subheader("Analyze a single comment")
+    st.caption("Write your own comment, or choose one of the two examples to see the analysis.")
+    st.info(PRIVACY_NOTICE)
+
+    st.session_state.setdefault("pf_single", PF_EV)
+    st.session_state.setdefault("ctx_single", next(iter(CTX_CODE)))
+    st.session_state.setdefault("context_single", "")
+    st.session_state.setdefault("comment_single", "")
+
+    st.selectbox(
+        "Example (optional)",
+        [""] + SINGLE_EXAMPLE_IDS,
+        format_func=_single_example_label,
+        key="demo_single",
+        on_change=_load_single_demo,
+    )
+
+    demo = DEMO_BY_ID.get(st.session_state.get("demo_single", ""))
+    if demo:
+        _render_example_intro(demo)
+
+    pf = st.text_area("Prescribed future", height=100, key="pf_single")
+    label = st.selectbox("Context type", list(CTX_CODE), key="ctx_single")
+    ctype = CTX_CODE[label]
+    st.caption(CTX_DESC[ctype])
+    context = st.text_area("Context (optional)", height=120, key="context_single")
+    comment = st.text_area("Comment to classify", height=160, key="comment_single")
+    with_secondary = st.checkbox(
+        "Allow secondary classifications (if the comment contains a separable second practice)",
+        key="secondary_single",
+    )
+
+    is_example = (
+        demo is not None
+        and comment.strip() == demo["comment"]
+        and pf.strip() == PF_EV.strip()
+        and not context.strip()
+    )
+    if is_example:
+        _show_example_analysis(demo, pf.strip(), with_secondary)
+        return
+    _custom_single_flow(pf, ctype, context, comment, with_secondary)
+
+
 # ─────────────────────────────────────────
-# TAB 2: SEVERAL COMMENTS AND DASHBOARD
+# TAB 2: MAP ORIENTATIONS ACROSS SEVERAL COMMENTS
 # ─────────────────────────────────────────
+SOURCE_CSV = "CSV file (column comment_text, text, or comment)"
+SOURCE_PASTE = "Pasted text (comments separated by a blank line)"
+SOURCE_CONV = "Pasted conversation with labels 'User 1:', 'User 2:'"
+SOURCE_OPTIONS = [SOURCE_CSV, SOURCE_PASTE, SOURCE_CONV] + [v["label"] for v in CONVERSATION_EXAMPLES.values()]
+
+
 def _read_records(source, is_consult, uploaded, text):
     """Returns (records, messages[(level, text)])."""
     msgs = []
-    if source == SOURCE_DEMO:
-        return build_comment_records_from_user_labels(DEMO_CONVERSATION), msgs
+    if source in CONVERSATION_BY_LABEL:
+        return build_comment_records_from_user_labels(CONVERSATION_BY_LABEL[source]["text"]), msgs
 
     if source == SOURCE_CSV:
         if uploaded is None:
@@ -299,11 +423,6 @@ def _author_label(r: dict, pseudo: bool) -> str:
     return pseudonymize(author) if pseudo else author
 
 
-def _pair_label(r: dict) -> str:
-    return (f"{_clean_enum(r.get('main_orientation', '')).title()} · "
-            f"{_clean_enum(r.get('activity_subtype', '')).title()}")
-
-
 def _render_pie(coex: dict):
     values = [{
         "orientation": ORI_LABEL[o],
@@ -331,7 +450,7 @@ def _render_pie(coex: dict):
         "width": 320,
         "height": 320,
     }
-    st.vega_lite_chart(spec)
+    st.vega_lite_chart(spec=spec)
 
 
 def _coexistence_sentence(coex: dict) -> str:
@@ -342,13 +461,13 @@ def _coexistence_sentence(coex: dict) -> str:
                 "so no coexistence is observed.")
     names = ", ".join(ORI_LABEL[o] for o in coex["present"])
     return (f"{coex['n_present']} of 4 orientations coexist in this set: {names}. "
-            "Coexistence describes the pattern in the corpus; it does not classify people.")
+            "Coexistence describes the pattern in these comments; it does not classify people.")
 
 
-def _render_demo_comparison(valid: list):
+def _render_reference_comparison(valid: list, reference: dict):
     rows = []
     for r in valid:
-        ref = DEMO_CONVERSATION_REFERENCE.get(r["_comment_id"])
+        ref = reference.get(r["_comment_id"])
         if not ref:
             continue
         pred = (_clean_enum(r.get("main_activity", "")).upper(),
@@ -357,26 +476,107 @@ def _render_demo_comparison(valid: list):
         exp = (ref["activity"], ref["subtype"], ref["orientation"])
         rows.append({
             "Participant": r["_comment_id"],
-            "Paper reference": f"{exp[2].title()} · {exp[0].title()} / {exp[1].title()}",
+            "Reference": f"{exp[2].title()} · {exp[0].title()} / {exp[1].title()}",
             "Model": f"{pred[2].title()} · {pred[0].title()} / {pred[1].title()}",
             "Match": "Yes" if pred == exp else "No",
         })
     if rows:
-        st.markdown("**Comparison with the paper's reference**")
+        st.markdown("**Comparison with the reference classification**")
         st.dataframe(pd.DataFrame(rows), hide_index=True)
-        st.caption(EXAMPLE_DISCLAIMER)
+        st.caption(EXAMPLE_NOTE)
 
 
-def _render_pairs(pairs, pseudo: bool):
-    for pair in pairs:
-        p, r = pair["parent"], pair["reply"]
-        st.markdown(
-            f"**{_author_label(p, pseudo) or 'Previous comment'} ({_pair_label(p)}) → "
-            f"{_author_label(r, pseudo) or 'Reply'} ({_pair_label(r)})**"
+def _render_analysis(valid: list):
+    coex = orientation_coexistence(valid)
+    present = coex["present"]
+    dist = compute_dominant_distributions(valid)
+
+    st.markdown("### Analysis and implications")
+    st.caption(
+        "Based only on the manuscript and its Web Appendix. Each comment is counted once, "
+        "by its dominant activity and orientation."
+    )
+
+    st.markdown("#### 1. Analysis of the results")
+    st.write(_coexistence_sentence(coex))
+    st.write(
+        "The manuscript describes the four orientations as socially patterned ways of performing "
+        "future-making, each with its own narrative, goal, temporality, and notable condition of adoption. "
+        "The table below gives the manuscript's definition for each orientation in this set."
+    )
+    st.dataframe(pd.DataFrame([{
+        "Orientation": ORI_LABEL[o],
+        "Narrative": TABLE2[o]["narrative"],
+        "Goal": TABLE2[o]["goal"],
+        "Temporality": TABLE2[o]["temporality"],
+        "Notable condition of adoption": TABLE2[o]["condition"],
+    } for o in present]), hide_index=True)
+    st.caption("Source: manuscript, Table 2.")
+
+    if dist["activity_counts"]:
+        st.write(
+            "Evaluation, negotiation, and enactment are interdependent in the manuscript. This tool records "
+            "only the dominant activity of each comment, so these counts describe the main function of each "
+            "comment, not everything it contains."
         )
-        st.markdown("> " + p["_comment_text"].replace("\n", " "))
-        st.markdown("> " + r["_comment_text"].replace("\n", " "))
-        st.divider()
+        st.dataframe(pd.DataFrame(list(dist["activity_counts"].items()),
+                                  columns=["Activity", "Comments"]), hide_index=True)
+
+    st.write(
+        "Two sampling limits from the manuscript apply. Public consultation submissions come from "
+        "self-selected participants, and the social media data were narrowed with future-oriented keywords. "
+        "Read the proportions with these limits in mind."
+    )
+
+    st.markdown("#### 2. Managerial implications")
+    st.write(
+        "The manuscript argues that orientations are not fixed segments. For managers, they indicate how "
+        "consumers are currently approaching the prescribed future, and therefore how support should be shaped."
+    )
+    for o in present:
+        g = MANAGER_ORIENTATION_GUIDANCE[o]
+        with st.expander(f"{ORI_LABEL[o]}: {coex['counts'][o]} comment(s)"):
+            st.write(g["implications"])
+            st.markdown(f"**Objective:** {g['objective']}")
+            st.markdown(f"**Avoid:** {g['avoid']}")
+
+    st.markdown("#### 3. Public policy implications")
+    st.write(
+        "The manuscript argues that policies should not assume uniform adoption of a prescribed future. "
+        "Multiple pathways can be supported, and interventions should account for the orientations present."
+    )
+    for o in present:
+        g = POLICY_ORIENTATION_GUIDANCE[o]
+        with st.expander(f"{ORI_LABEL[o]}: {coex['counts'][o]} comment(s)"):
+            st.write(g["implications"])
+            st.markdown(f"**Objective:** {g['objective']}")
+
+    st.markdown("#### 4. Suggested additional information")
+    st.caption("Drawn only from the manuscript and its Web Appendix.")
+    st.markdown(
+        "- **Data source for each comment.** Table 1 separates interviews, news media, archival documents, "
+        "public consultations, social media, and forum threads. Recording the source keeps institutional and "
+        "media texts apart from consumer comments.\n"
+        "- **Narrative, temporality, and condition of adoption for each comment.** Table 2 defines these for "
+        "each orientation. The tool already returns them; adding them as columns to the results table would "
+        "allow checking against Table 2.\n"
+        "- **The prescribed future used as reference.** Orientations are defined relative to the prescribed "
+        "future. Record the exact statement used, such as the 2023 National Electric Vehicle Strategy and its "
+        "35% reduction target by 2030, described in the manuscript's research context.\n"
+        "- **Full conversation sequences.** Figure 2 and the vignettes in Web Appendix D (Figures WD1 to WD3, "
+        "referenced in the manuscript) show how one performance responds to another. Keep thread and "
+        "parent-comment links so sequences can be reviewed in order.\n"
+        "- **Coding examples (Web Appendix B, Table WB1).** Record which excerpt supports each orientation and "
+        "activity, so each classification can be traced to the coding structure.\n"
+        "- **Future-oriented language.** The manuscript narrowed the social media data with future-oriented "
+        "keywords. Flag comments that describe what consumers already do without future-oriented wording, "
+        "because these may be underrepresented.\n"
+        "- **Consultation question.** Each consultation response should carry the question or proposal it "
+        "answers, as described in the manuscript's data collection section.\n"
+        "- **Monitoring over time.** The roadmaps in Figures 3 and 4 call for measuring progress and revising "
+        "the intervention (steps 6 and 7 for policymakers). A dated log of results supports that step; a single "
+        "run cannot show change."
+    )
 
 
 def _show_dashboard(stored: dict, pseudo: bool):
@@ -386,7 +586,7 @@ def _show_dashboard(stored: dict, pseudo: bool):
 
     st.success(f"Analysis complete: {len(valid)} of {len(results)} comments classified.")
     if errors:
-        st.warning(f"{errors} comment(s) with errors. They are not counted in the distribution. "
+        st.warning(f"{errors} comment(s) with errors. They are not counted in the results. "
                    "See the Error column in the table.")
     if stored.get("omitted"):
         st.warning(f"{stored['omitted']} comments were omitted because of the {MAX_COMMENTS}-comment limit.")
@@ -400,12 +600,11 @@ def _show_dashboard(stored: dict, pseudo: bool):
         _render_pie(coex)
     with col_text:
         st.write(_coexistence_sentence(coex))
-        table = pd.DataFrame([{
+        st.dataframe(pd.DataFrame([{
             "Orientation": ORI_LABEL[o],
             "Comments": coex["counts"][o],
             "Share": f"{coex['shares'][o]:.0%}",
-        } for o in ORIENTATION_ORDER])
-        st.dataframe(table, hide_index=True)
+        } for o in ORIENTATION_ORDER]), hide_index=True)
         st.caption("The chart shows the same information as the table, so it can be read without color.")
 
     by_thread = orientations_by_thread(valid)
@@ -415,39 +614,16 @@ def _show_dashboard(stored: dict, pseudo: bool):
         for tid, info in by_thread.items():
             present = [o for o in ORIENTATION_ORDER if info["counts"][o]]
             rows.append({
-                "Conversation": "Labeled conversation" if tid == LABELED_THREAD else str(tid),
+                "Conversation": "Pasted conversation" if tid == LABELED_THREAD else str(tid),
                 "Comments": info["n"],
                 "Orientations present": f"{len(present)} of 4: " + ", ".join(ORI_LABEL[o] for o in present),
             })
         st.dataframe(pd.DataFrame(rows), hide_index=True)
 
-    st.markdown("### Activity distribution")
-    dist = compute_dominant_distributions(valid)
-    if dist["activity_counts"]:
-        st.dataframe(pd.DataFrame(list(dist["activity_counts"].items()),
-                                  columns=["Activity", "Comments"]), hide_index=True)
-    if dist["subtype_counts"]:
-        st.dataframe(pd.DataFrame(list(dist["subtype_counts"].items()),
-                                  columns=["Activity / subtype", "Comments"]), hide_index=True)
+    if stored.get("reference"):
+        _render_reference_comparison(valid, stored["reference"])
 
-    if stored.get("demo"):
-        _render_demo_comparison(valid)
-
-    st.markdown("### Human review of future-making challenges")
-    st.caption("These are leads for manual review, not automatic diagnoses. Only linked pairs are interpreted.")
-    candidates = compute_challenge_review_candidates(results)
-    for key, meta in CHALLENGE_DEFINITIONS.items():
-        pairs = candidates.get(key, [])
-        with st.expander(f"{meta['label']}: {len(pairs)} linked pair(s) to review"):
-            st.write(CHALLENGE_POLICY_GUIDANCE[key]["diagnostic_question"])
-            st.write(CHALLENGE_POLICY_GUIDANCE[key]["action"])
-            if pairs:
-                st.markdown("**Linked pairs (conversation order)**")
-                _render_pairs(pairs, pseudo)
-
-    with st.expander("Interpretation notes"):
-        st.write(MANAGER_MESSAGING_NOTE)
-        st.write(CROSS_ORIENTATION_NOTE)
+    _render_analysis(valid)
 
     st.markdown("### Results table")
     rows = []
@@ -459,6 +635,9 @@ def _show_dashboard(stored: dict, pseudo: bool):
             "Orientation": _clean_enum(r.get("main_orientation", "")),
             "Activity": _clean_enum(r.get("main_activity", "")),
             "Subtype": _clean_enum(r.get("activity_subtype", "")),
+            "Narrative": r.get("narrative_identified", ""),
+            "Temporality": r.get("temporality_identified", ""),
+            "Condition of adoption": r.get("notable_conditions_of_adoption", ""),
             "Supporting text": r.get("supporting_text", ""),
             "Error": r.get("_error", ""),
         })
@@ -475,27 +654,38 @@ def _show_dashboard(stored: dict, pseudo: bool):
 
 def tab_multiple():
     st.subheader("Map orientations across several comments")
-    st.caption("Upload a CSV, paste comments, or use the paper's example conversation.")
+    st.caption("Upload a CSV, paste comments, or choose one of the two example conversations.")
+    st.info(PRIVACY_NOTICE)
 
-    pf = st.text_area("Prescribed future", value=PF_EV, height=100, key="pf_multi")
-    source = st.radio(
-        "Source of the comments",
-        [SOURCE_CSV, SOURCE_PASTE, SOURCE_CONV, SOURCE_DEMO],
-        key="source_multi",
-    )
+    st.session_state.setdefault("pf_multi", PF_EV)
+    pf = st.text_area("Prescribed future", height=100, key="pf_multi")
+    source = st.radio("Source of the comments", SOURCE_OPTIONS, key="source_multi")
+    example = CONVERSATION_BY_LABEL.get(source)
+
     uploaded, text = None, ""
-    if source == SOURCE_CSV:
+    if example:
+        st.markdown(
+            "**Context type:** Parent comment. Each user is read with the previous user's comment "
+            "as context; User 1 has no context."
+        )
+        with st.expander("Show the conversation", expanded=True):
+            for block in example["text"].split("\n\n"):
+                st.markdown("> " + block)
+        st.caption(example["source_note"])
+    elif source == SOURCE_CSV:
         uploaded = st.file_uploader("Upload the CSV file", type=["csv"], key="csv_upload")
-    elif source != SOURCE_DEMO:
+    else:
         text = st.text_area("Paste the comments here", height=250, key="text_multi")
 
-    is_consult = st.checkbox("These are responses to a public consultation", key="is_consult")
-    consult_q = ""
-    if is_consult:
-        consult_q = st.text_area(
-            "Consultation question or proposal (context for every response)",
-            height=100, key="consult_question",
-        )
+    is_consult, consult_q, consent = False, "", True
+    if not example:
+        is_consult = st.checkbox("These are responses to a public consultation", key="is_consult")
+        if is_consult:
+            consult_q = st.text_area(
+                "Consultation question or proposal (context for every response)",
+                height=100, key="consult_question",
+            )
+        consent = st.checkbox(PII_CONSENT_LABEL, key="pii_multi")
     pseudo = st.checkbox("Pseudonymize authors in the table and download", value=True, key="pseudo_multi")
 
     if not pf.strip():
@@ -504,8 +694,6 @@ def tab_multiple():
     if is_consult and not consult_q.strip():
         st.warning("Enter the consultation question before analyzing.")
         return
-    if source == SOURCE_DEMO:
-        st.info(EXAMPLE_DISCLAIMER)
 
     records, msgs = _read_records(source, is_consult, uploaded, text)
     for level, msg in msgs:
@@ -525,7 +713,6 @@ def tab_multiple():
     if omitted:
         st.warning(f"{omitted} comments will be omitted to control cost (limit {MAX_COMMENTS}). "
                    "Complete threads are kept together.")
-    st.info(f"Estimated cost: ~USD {len(selected) * EST_COST_PER_COMMENT:.2f}.")
 
     with st.expander("Preview the comments"):
         st.dataframe(pd.DataFrame([{
@@ -536,7 +723,7 @@ def tab_multiple():
 
     signature = _signature(pf.strip(), consult_q.strip(), is_consult, selected)
 
-    if st.button("Analyze comments", type="primary", key="btn_multi"):
+    if st.button("Analyze comments", type="primary", key="btn_multi", disabled=not consent):
         progress = st.progress(0, text="Starting analysis...")
         try:
             results = analyze_document(
@@ -552,14 +739,14 @@ def tab_multiple():
             "signature": signature,
             "results": results,
             "omitted": omitted,
-            "demo": source == SOURCE_DEMO,
+            "reference": example["reference"] if example else None,
         }
 
     stored = st.session_state.get("multi")
     if not stored:
         return
     if stored["signature"] != signature:
-        st.info("The input changed since the last analysis. Analyze again to update the dashboard.")
+        st.info("The input changed since the last analysis. Analyze again to update the results.")
         return
     _show_dashboard(stored, pseudo)
 
@@ -572,10 +759,11 @@ check_password()
 st.title("Consumer Future-Making Analyzer")
 with st.expander("About this tool"):
     st.markdown(HOMEPAGE_DESCRIPTION)
+    st.info(PRIVACY_NOTICE)
     st.caption(f'"{PAPER_TITLE}" | Read the paper: {PAPER_URL}')
     st.caption(INTERPRETIVE_USE_NOTE)
 
-tab1, tab2 = st.tabs(["Analyze a single comment", "Several comments and dashboard"])
+tab1, tab2 = st.tabs(["Analyze a single comment", "Map orientations across several comments"])
 with tab1:
     tab_single()
 with tab2:
