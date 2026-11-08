@@ -1,7 +1,7 @@
 """
 Consumer Future-Making Analyzer: analysis engine.
 
-Holds classification, context building, data reading, and aggregation.
+Holds classification, context building, data reading, link handling, and aggregation.
 The interface (app.py) imports everything from this module.
 
 Terminal usage:
@@ -38,9 +38,19 @@ MAX_COMMENTS = int(os.environ.get("MAX_COMENTARIOS", "300"))
 EST_COST_PER_COMMENT = 0.00075
 MAX_SECONDARY = 2
 MAX_NOTE_CHARS = 300
+ORIENTATION_ORDER = ["CATALYZER", "AMBIVALENT", "RESISTANT", "EXPANDER"]
+
+# Thread identifiers
 DEFAULT_THREAD = "_default_thread_"     # comments with no known thread
 LABELED_THREAD = "_labeled_exchange_1"  # conversation with "User N:" labels
-ORIENTATION_ORDER = ["CATALYZER", "AMBIVALENT", "RESISTANT", "EXPANDER"]
+ASSUMED_THREAD = "_assumed_thread_"     # pasted text linked by an opt-in assumption
+
+# Link basis. Every link carries one of these, so the app never presents an
+# assumed link as confirmed interaction.
+LINK_CONFIRMED = "confirmed_reply"      # the data states who replied to whom
+LINK_LABELED = "labeled_sequence"       # order given by "User N:" labels; not verified as replies
+LINK_ASSUMED = "assumed_adjacent"       # assigned by the tool, only if the user opts in
+LINK_NONE = "no_link"
 
 EXAMPLE_DISCLAIMER = (
     "The paper's examples are also included in the model's instructions. "
@@ -585,17 +595,10 @@ FRAGILE_FUTURES_DEFINITION = (
 )
 
 # ═══════════════════════════════════════════════════════════════
-# GUIDANCE CONTENT
-# Wording follows the manuscript's Discussion (implications for policymakers and managerial
-# practitioners), Table 2, and the text describing Figures 3 and 4. The actions listed in
-# Web Appendix Tables WE1 and WE2 were not available and are NOT included.
+# ROADMAP CONTENT (wording follows the manuscript's Discussion, Table 2, and the
+# description of Figures 3 and 4). Actions from Web Appendix Tables WE1 and WE2 are
+# adapted in app.py.
 # ═══════════════════════════════════════════════════════════════
-GUIDANCE_SOURCE = (
-    "Wording follows the manuscript's Discussion (implications for policymakers and managerial "
-    "practitioners), Table 2, and the description of Figures 3 and 4. Actions listed in Web "
-    "Appendix Tables WE1 and WE2 are not included in this version."
-)
-
 EXPECTED_POLICY_STEP_TITLES = [
     "Determine the prescribed future",
     "Monitor initial responses and map future-making orientations",
@@ -653,6 +656,13 @@ MANAGER_ROADMAP_STEPS = [
      "positive experience on the pathway toward the preferred future."),
 ]
 
+STEP2_ORIENTATION_LENS = {
+    "CATALYZER": "This orientation sees the prescribed future as urgent, desirable, and already underway.",
+    "AMBIVALENT": "This orientation sees the prescribed future as valuable, but conditions are not yet ready.",
+    "RESISTANT": "This orientation sees the prescribed future as a threat to autonomy, identity, or rights.",
+    "EXPANDER": "This orientation sees the prescribed future as framed too narrowly.",
+}
+
 # Step 3 diagnostic questions. The two roadmaps use different wording on purpose.
 POLICY_STEP3_QUESTIONS = {
     "CONVOLUTED_EVALUATIONS":
@@ -674,11 +684,11 @@ MANAGER_STEP3_QUESTIONS = {
 
 POLICY_ORIENTATION_GUIDANCE = {
     "CATALYZER": {
-        "lens": "Consumers with this orientation see the prescribed future as the rightly determined one and the change as already happening (urgency narrative; Table 2).",
+        "lens": "Consumers with a catalyzer orientation see the prescribed future as the rightly determined one and the change as already happening (urgency narrative; Table 2).",
         "implications": (
-            "Catalyzers can help normalize the move toward the prescribed future, and their enthusiasm can be "
-            "leveraged to bring other consumers along, for example through word-of-mouth or testimonials. The "
-            "manuscript's aim is not to convert all consumers to this orientation."
+            "Consumers with a catalyzer orientation can help normalize the move toward the prescribed future, and "
+            "their enthusiasm can be leveraged to bring other consumers along, for example through word-of-mouth or "
+            "testimonials. The manuscript's aim is not to convert all consumers to this orientation."
         ),
         "monitor": [
             "Urgency and inevitability language (Table 2: the future is close).",
@@ -687,7 +697,7 @@ POLICY_ORIENTATION_GUIDANCE = {
         "objective": "Use this enthusiasm to normalize the change without requiring other consumers to share this orientation.",
     },
     "AMBIVALENT": {
-        "lens": "Consumers with this orientation see the prescribed future as contingent: change is uncertain and conditions are not yet ready (pragmatic narrative; Table 2).",
+        "lens": "Consumers with an ambivalent orientation see the prescribed future as contingent: change is uncertain and conditions are not yet ready (pragmatic narrative; Table 2).",
         "implications": (
             "Ambivalence can play a constructive role. It prompts reflection, surfaces weak points, and calls for "
             "stronger infrastructure before large-scale adoption, which can make transitions more robust. These "
@@ -700,7 +710,7 @@ POLICY_ORIENTATION_GUIDANCE = {
         "objective": "Turn the conditions these consumers name into specific questions the intervention can answer.",
     },
     "RESISTANT": {
-        "lens": "Consumers with this orientation frame the prescribed future through a control narrative, as coercive and inequitable, and seek to protect the status quo (Table 2).",
+        "lens": "Consumers with a resistant orientation frame the prescribed future through a control narrative, as coercive and inequitable, and seek to protect the status quo (Table 2).",
         "implications": (
             "Examining this orientation can provide valuable insight into consumers' reasons for pushback. The "
             "manuscript notes that these consumers feel they have no say in designing the future."
@@ -712,7 +722,7 @@ POLICY_ORIENTATION_GUIDANCE = {
         "objective": "Understand the reasons for pushback and give these consumers a way to be heard in designing the future.",
     },
     "EXPANDER": {
-        "lens": "Consumers with this orientation situate the intervention within wider systems and see the change as needing to be broader (bigger picture narrative; Table 2).",
+        "lens": "Consumers with an expander orientation situate the intervention within wider systems and see the change as needing to be broader (bigger picture narrative; Table 2).",
         "implications": (
             "Expander critique broadens the scope of the envisioned change and encourages systemic innovation beyond "
             "immediate next steps. It highlights issues the intervention may not have considered, such as cities "
@@ -786,15 +796,17 @@ CHALLENGE_POLICY_GUIDANCE = {
     "CONFRONTATIONAL_NEGOTIATIONS": {
         "diagnostic_question": POLICY_STEP3_QUESTIONS["CONFRONTATIONAL_NEGOTIATIONS"],
         "action": (
-            "Confrontation makes it harder to accommodate change and to bring a future into being collectively. Accommodating "
-            "diverse preferred futures creates opportunities for multiple pathways, rather than enforcing only the prescribed change."
+            "Confrontation makes it harder to accommodate change and to bring a future into being collectively. "
+            "Accommodating diverse preferred futures creates opportunities for multiple pathways, rather than "
+            "enforcing only the prescribed change."
         ),
     },
     "COMPETING_ENACTMENTS": {
         "diagnostic_question": POLICY_STEP3_QUESTIONS["COMPETING_ENACTMENTS"],
         "action": (
-            "Divergent enactments create volatility and hinder progress toward the prescribed future and its stabilization. "
-            "Support multiple viable pathways, and keep the prescribed future from becoming the only accepted route."
+            "Divergent enactments create volatility and hinder progress toward the prescribed future and its "
+            "stabilization. Support multiple viable pathways, and keep the prescribed future from becoming the only "
+            "accepted route."
         ),
     },
 }
@@ -803,8 +815,8 @@ CHALLENGE_MANAGER_GUIDANCE = {
     "CONVOLUTED_EVALUATIONS": {
         "diagnostic_question": MANAGER_STEP3_QUESTIONS["CONVOLUTED_EVALUATIONS"],
         "action": (
-            "Where evaluations diverge at a touchpoint, address the evidence or timeline consumers rely on, so that the support "
-            "offered fits their situation."
+            "Where evaluations diverge at a touchpoint, address the evidence or timeline consumers rely on, so that "
+            "the support offered fits their situation."
         ),
     },
     "CONFRONTATIONAL_NEGOTIATIONS": {
@@ -817,8 +829,8 @@ CHALLENGE_MANAGER_GUIDANCE = {
     "COMPETING_ENACTMENTS": {
         "diagnostic_question": MANAGER_STEP3_QUESTIONS["COMPETING_ENACTMENTS"],
         "action": (
-            "Support consumers through the enactment they are attempting at each touchpoint, including delayed, refused, or "
-            "rerouted practices, rather than only the prescribed change."
+            "Support consumers through the enactment they are attempting at each touchpoint, including delayed, refused, "
+            "or rerouted practices, rather than only the prescribed change."
         ),
     },
 }
@@ -925,7 +937,8 @@ DEMO_EXAMPLES = [
 
 DEMO_BY_ID = {ex["id"]: ex for ex in DEMO_EXAMPLES}
 
-# Paper conversation (forum). Links are adjacency: each user replies to the previous one.
+# Paper conversation (forum). The "User N:" labels give the order of the exchange.
+# That order is the authors' presentation, not a verified reply chain.
 DEMO_CONVERSATION = """User 1: EVs will be on an exponential adoption curve. Everyone will want one... Nobody will want an expensive 2nd hand ICE... Globally, governments are going to start making fossil fuels very expensive. T-A-X-E-S will be levied on this foul, polluting rubbish we are all burning today... Or are you advocating that we go back to bicycles and horses, or maybe just buses?
 
 User 2: Better tell that to the Prius owners replacing their batteries. My car is now 13 years old... Batteries wear over time... so what magic bullet have you discovered that defies physics...? Once someone like me can get a used EV for <$10k, and have the battery replaced cheaply, then I'll agree with you... I'm not anti EV, I'm just realistic about costs and time frames.
@@ -1154,6 +1167,7 @@ def analyze_document(records: list, prescribed_future: str, progress_callback=No
                 "_comment_id": rec["comment_id"],
                 "_thread_id": rec["thread_id"],
                 "_parent_comment_id": rec.get("parent_comment_id"),
+                "_link_source": rec.get("link_source", LINK_NONE),
                 "_comment_text": rec["comment_text"],
                 "_author": rec.get("author", ""),
                 "_original_index": rec["original_index"],
@@ -1198,8 +1212,8 @@ def build_comment_records_from_user_labels(text: str) -> list:
         records.append({
             "comment_id": f"user{num}",
             "thread_id": LABELED_THREAD,
-            # Adjacency: each user replies to the previous one (explicit assumption, not verified).
             "parent_comment_id": f"user{kept[pos - 1][0]}" if pos > 0 else None,
+            "link_source": LINK_LABELED if pos > 0 else LINK_NONE,
             "author": f"User {num}", "timestamp": "",
             "comment_text": cleaned, "original_index": pos,
         })
@@ -1218,7 +1232,8 @@ def build_comment_records_from_paragraphs(text: str):
             continue
         records.append({
             "comment_id": f"c{len(records)}", "thread_id": DEFAULT_THREAD,
-            "parent_comment_id": None, "author": "", "timestamp": "",
+            "parent_comment_id": None, "link_source": LINK_NONE,
+            "author": "", "timestamp": "",
             "comment_text": item, "original_index": len(records),
         })
     return records, discarded
@@ -1242,10 +1257,12 @@ def build_comment_records_from_csv(df: pd.DataFrame) -> list:
         text = str(raw).strip() if pd.notna(raw) else ""
         if not text:
             continue
+        parent_id = safe_get(row, "parent_comment_id", "") or None
         records.append({
             "comment_id": safe_get(row, "comment_id", f"c{i}"),
             "thread_id": safe_get(row, "thread_id", DEFAULT_THREAD) or DEFAULT_THREAD,
-            "parent_comment_id": safe_get(row, "parent_comment_id", "") or None,
+            "parent_comment_id": parent_id,
+            "link_source": LINK_CONFIRMED if parent_id else LINK_NONE,
             "author": safe_get(row, "author", ""),
             "timestamp": safe_get(row, "timestamp", ""),
             "comment_text": text, "original_index": len(records),
@@ -1272,14 +1289,33 @@ def extract_public_consultation_responses(text: str, min_words: int = 4) -> list
 def build_comment_records_from_consultation(text: str) -> list:
     return [{
         "comment_id": f"resp_{item['id']}", "thread_id": DEFAULT_THREAD,
-        "parent_comment_id": None, "author": "", "timestamp": "",
+        "parent_comment_id": None, "link_source": LINK_NONE,
+        "author": "", "timestamp": "",
         "comment_text": item["text"], "original_index": i,
     } for i, item in enumerate(extract_public_consultation_responses(text))]
 
 
+def apply_assumed_adjacency(records: list) -> list:
+    """Opt-in. Treats each comment as a reply to the one above it, but only for comments that
+    have no thread and no parent. Every link it creates is marked LINK_ASSUMED.
+    Existing confirmed or labeled links are never changed."""
+    for i in range(1, len(records)):
+        cur, prev = records[i], records[i - 1]
+        if cur.get("parent_comment_id") or cur["thread_id"] != DEFAULT_THREAD:
+            continue
+        if prev["thread_id"] not in (DEFAULT_THREAD, ASSUMED_THREAD):
+            continue
+        if prev["thread_id"] == DEFAULT_THREAD:
+            prev["thread_id"] = ASSUMED_THREAD
+        cur["thread_id"] = ASSUMED_THREAD
+        cur["parent_comment_id"] = prev["comment_id"]
+        cur["link_source"] = LINK_ASSUMED
+    return records
+
+
 def ensure_unique_ids(records: list) -> int:
-    """Renames duplicate identifiers. Returns how many were renamed."""
-    used, renamed = set(), 0
+    """Renames duplicate identifiers and updates parent references. Returns how many were renamed."""
+    used, renamed, mapping = set(), 0, {}
     for r in records:
         base = str(r["comment_id"])
         new_id, n = base, 1
@@ -1289,7 +1325,12 @@ def ensure_unique_ids(records: list) -> int:
             new_id = f"{base}_{n}"
             n += 1
         used.add(new_id)
+        mapping.setdefault(base, new_id)
         r["comment_id"] = new_id
+    for r in records:
+        pid = r.get("parent_comment_id")
+        if pid in mapping:
+            r["parent_comment_id"] = mapping[pid]
     return renamed
 
 
@@ -1432,7 +1473,7 @@ def orientation_coexistence(results: list) -> dict:
 
 
 def orientations_by_thread(results: list) -> dict:
-    """For real threads with at least two comments: which orientations appear in each."""
+    """For real threads (labeled, confirmed, or assumed) with at least two comments."""
     table = {}
     for r in results:
         tid = r.get("_thread_id", DEFAULT_THREAD)
@@ -1446,15 +1487,19 @@ def orientations_by_thread(results: list) -> dict:
     return {tid: e for tid, e in table.items() if e["n"] >= 2}
 
 
-def compute_challenge_review_candidates(results: list) -> dict:
-    """Flags LINKED pairs with the same activity but different performance, for human review.
-    Does not diagnose the challenge and does not assign scores."""
+def compute_challenge_review_candidates(results: list, include_assumed: bool = False) -> dict:
+    """Flags LINKED pairs with the same activity but a different performance, for human review.
+    Pairs whose link was assumed by the tool are excluded unless include_assumed is True.
+    Does not diagnose a challenge and does not assign scores."""
     valid = [r for r in results if r and "_error" not in r]
     by_id = {r.get("_comment_id"): r for r in valid if r.get("_comment_id")}
     candidates = {k: [] for k in CHALLENGE_DEFINITIONS}
     for r in valid:
         parent_id = r.get("_parent_comment_id")
         if not parent_id or parent_id not in by_id:
+            continue
+        link = r.get("_link_source", LINK_NONE)
+        if link == LINK_ASSUMED and not include_assumed:
             continue
         parent = by_id[parent_id]
         act_r = _clean_enum(r.get("main_activity", "")).upper()
@@ -1468,7 +1513,7 @@ def compute_challenge_review_candidates(results: list) -> dict:
             continue
         key = next((k for k, v in CHALLENGE_DEFINITIONS.items() if v["activity"] == act_r), None)
         if key:
-            candidates[key].append({"parent": parent, "reply": r})
+            candidates[key].append({"parent": parent, "reply": r, "link_source": link})
     return candidates
 
 
@@ -1498,6 +1543,21 @@ def check_obsolete_terms():
             text = path.read_text(encoding="utf-8").lower()
             hits += [f"{name}: '{t}'" for t in terms if t in text]
     return not hits, "No findings" if not hits else "; ".join(hits)
+
+
+def _assumed_link_selftest() -> bool:
+    """Checks that assumed links are hidden by default and shown only when requested."""
+    fake = [
+        {"_comment_id": "a", "_parent_comment_id": None, "_link_source": LINK_NONE,
+         "_comment_text": "x", "main_activity": "NEGOTIATION", "main_orientation": "CATALYZER",
+         "activity_subtype": "ADVOCATE"},
+        {"_comment_id": "b", "_parent_comment_id": "a", "_link_source": LINK_ASSUMED,
+         "_comment_text": "y", "main_activity": "NEGOTIATION", "main_orientation": "RESISTANT",
+         "activity_subtype": "REJECT"},
+    ]
+    hidden = sum(len(v) for v in compute_challenge_review_candidates(fake).values())
+    shown = sum(len(v) for v in compute_challenge_review_candidates(fake, include_assumed=True).values())
+    return hidden == 0 and shown == 1
 
 
 def run_framework_validation() -> list:
@@ -1531,7 +1591,7 @@ def run_framework_validation() -> list:
     add("Orientation guidance complete in both roadmaps",
         all(o in POLICY_ORIENTATION_GUIDANCE and o in MANAGER_ORIENTATION_GUIDANCE
             for o in REQUIRED_ORIENTATIONS), "")
-    add("Managerial guidance includes 'avoid'; policy guidance does not",
+    add("Managerial guidance has an 'avoid' key; policy guidance does not",
         all("avoid" in MANAGER_ORIENTATION_GUIDANCE[o] for o in REQUIRED_ORIENTATIONS)
         and all("avoid" not in POLICY_ORIENTATION_GUIDANCE[o] for o in REQUIRED_ORIENTATIONS), "")
     add("Demo examples: references valid under the matrix",
@@ -1539,11 +1599,12 @@ def run_framework_validation() -> list:
             == e["referencia"]["subtype"] for e in DEMO_EXAMPLES), "")
     add("Demo examples cover all 4 orientations",
         {e["referencia"]["orientation"] for e in DEMO_EXAMPLES} == REQUIRED_ORIENTATIONS, "")
-    add("Interface examples (joe, clara) exist",
-        "joe" in DEMO_BY_ID and "clara" in DEMO_BY_ID, "")
+    add("Interface examples (joe, clara) exist", "joe" in DEMO_BY_ID and "clara" in DEMO_BY_ID, "")
     add("Demo conversation: one reference per orientation",
         {v["orientation"] for v in DEMO_CONVERSATION_REFERENCE.values()} == REQUIRED_ORIENTATIONS
         and len(DEMO_CONVERSATION_REFERENCE) == 4, "")
+    add("Assumed links are hidden by default and shown only when requested",
+        _assumed_link_selftest(), "")
     ok, detail = check_obsolete_terms()
     add("No obsolete terms in the code", ok, detail)
     return tests
