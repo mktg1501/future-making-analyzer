@@ -3,11 +3,10 @@ Consumer Future-Making Analyzer: interface (Streamlit).
 The analysis logic lives in motor.py.
 """
 import hashlib
-import hmac
 import html
 import json
 import logging
-import os
+import re
 from collections import Counter
 
 import pandas as pd
@@ -20,7 +19,7 @@ st.set_page_config(
 )
 
 from motor import (
-    CONTEXT_TYPE_CHOICES, DEMO_BY_ID, DEMO_CONVERSATION, DEMO_CONVERSATION_REFERENCE,
+    CONTEXT_TYPE_CHOICES, DEMO_BY_ID, DEMO_CONVERSATION_REFERENCE,
     HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE, LABELED_THREAD, MANAGER_ORIENTATION_GUIDANCE,
     MANAGER_ROADMAP_STEPS, MAX_COMMENTS, ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL,
     PF_EV, POLICY_ORIENTATION_GUIDANCE, POLICY_ROADMAP_STEPS, analyze_comment, analyze_document,
@@ -40,6 +39,30 @@ CTX_LABEL = {code: label for label, code, _ in CONTEXT_TYPE_CHOICES}
 CTX_DESC = {code: desc for _, code, desc in CONTEXT_TYPE_CHOICES}
 
 ORI_LABEL = {o: o.title() for o in ORIENTATION_ORDER}
+
+# Wording rule: orientations are described as "consumers with a ... orientation",
+# never as "Resistant consumers" or "Catalyzers". Applied to all guidance text shown.
+ORIENTATION_PHRASES = [
+    (r"\bResistant consumers\b", "Consumers with a resistant orientation"),
+    (r"\bresistant consumers\b", "consumers with a resistant orientation"),
+    (r"\bCatalyzers\b", "Consumers with a catalyzer orientation"),
+    (r"\bCatalyzer consumers\b", "Consumers with a catalyzer orientation"),
+    (r"\bcatalyzer consumers\b", "consumers with a catalyzer orientation"),
+    (r"\bAmbivalent consumers\b", "Consumers with an ambivalent orientation"),
+    (r"\bambivalent consumers\b", "consumers with an ambivalent orientation"),
+    (r"\bExpanders\b", "Consumers with an expander orientation"),
+    (r"\bExpander consumers\b", "Consumers with an expander orientation"),
+    (r"\bexpander consumers\b", "consumers with an expander orientation"),
+    (r"\bResistant\b", "resistant"),
+]
+
+
+def _neutral(text: str) -> str:
+    out = str(text)
+    for pattern, replacement in ORIENTATION_PHRASES:
+        out = re.sub(pattern, replacement, out)
+    return out
+
 
 EXAMPLE_NOTE = (
     "These examples show how the tool works. The same comments are included in the model's "
@@ -103,9 +126,7 @@ WE_ORIENTATION_GUIDANCE = {
             "Monitor conditional language, repeated comparison, requests for evidence, trials without continuation, "
             "and abandoned purchases. Identify the specific unresolved condition."
         ),
-        "manager_caution": (
-            "Avoid pressure, artificial urgency, and framing hesitation as ignorance."
-        ),
+        "manager_caution": "Avoid pressure, artificial urgency, and framing hesitation as ignorance.",
     },
     "RESISTANT": {
         "policy_action": (
@@ -143,7 +164,6 @@ WE_MESSAGING_RULE = (
     "distributional effects. Avoid inevitability and universal-benefit claims. (Table WE2, step 5.)"
 )
 
-# Step-level actions drawn from Tables WE1 and WE2 (adapted), shown in the roadmap integration table.
 WE_POLICY_STEP_ACTIONS = {
     1: "Define the practices the intervention changes. Check whether the prescribed future depends on conditions (money, equipment, skills, access) that are not evenly distributed.",
     2: "Combine consultations, complaints, feedback, and accounts of planned or actual practice. Do not infer a consumer's orientation toward one measure from their response to another.",
@@ -186,7 +206,23 @@ CONV2_REFERENCE = {
 CONVERSATION_EXAMPLES = {
     "conv1": {
         "label": "Example 1: forum exchange on the adoption curve (4 users)",
-        "text": DEMO_CONVERSATION,
+        "text": (
+            "User 1: EVs will be on an exponential adoption curve. Everyone will want one... Nobody will want an "
+            "expensive 2nd hand ICE... Globally, governments are going to start making fossil fuels very expensive. "
+            "T-A-X-E-S will be levied on this foul, polluting rubbish we are all burning today... Or are you advocating "
+            "that we go back to bicycles and horses, or maybe just buses?\n\n"
+            "User 2: Better tell that to the Prius owners replacing their batteries. My car is now 13 years old... "
+            "Batteries wear over time... so what magic bullet have you discovered that defies physics...? Once someone "
+            "like me can get a used EV for <$10k, and have the battery replaced cheaply, then I'll agree with you... "
+            "I'm not anti EV, I'm just realistic about costs and time frames.\n\n"
+            "User 3: Nope, I'm not confused, thanks for the concern though... If he bought an ICE car now, he will get "
+            "6-10 years use out of it and sell it for scrap value and registration. Not even close to the financial ruin "
+            "you are trying to peddle... Technology adoption curves typically look like bell curves... not what you are "
+            "suggesting... This is delusional.\n\n"
+            "User 4: I fully get what you're saying, it's not rocket science, but that's not what I'm on about... I simply "
+            "object to being told I'm an idiot... I'd like to see passenger cars filled with passengers, less cars on the "
+            "road, less money spent on new roads!... Where people may simply drive less."
+        ),
         "reference": DEMO_CONVERSATION_REFERENCE,
         "source_note": (
             "Forum exchange quoted in the manuscript. Reference labels are those the manuscript "
@@ -236,27 +272,6 @@ TABLE2 = {
 
 
 # ─────────────────────────────────────────
-# PASSWORD
-# ─────────────────────────────────────────
-def check_password():
-    if st.session_state.get("authenticated"):
-        return
-    st.title("Consumer Future-Making Analyzer")
-    expected = os.environ.get("APP_PASSWORD", "")
-    if not expected:
-        st.error("The APP_PASSWORD variable is missing on the server. Ask the administrator to set it.")
-        st.stop()
-    entered = st.text_input("Access password", type="password")
-    if st.button("Enter"):
-        if hmac.compare_digest(entered.encode("utf-8"), expected.encode("utf-8")):
-            st.session_state["authenticated"] = True
-            st.rerun()
-        else:
-            st.error("Incorrect password.")
-    st.stop()
-
-
-# ─────────────────────────────────────────
 # SHARED COMPONENTS
 # ─────────────────────────────────────────
 def show_result(r: dict, reference: dict = None):
@@ -287,11 +302,11 @@ def show_result(r: dict, reference: dict = None):
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("**Activity rationale**")
-        st.write(str(r.get("activity_rationale", "")))
+        st.write(_neutral(r.get("activity_rationale", "")))
         st.markdown("**Orientation rationale**")
-        st.write(str(r.get("orientation_rationale", "")))
+        st.write(_neutral(r.get("orientation_rationale", "")))
     with col2:
-        st.markdown("**Narrative identified:** " + str(r.get("narrative_identified", "")))
+        st.markdown("**Narrative identified:** " + _neutral(r.get("narrative_identified", "")))
         st.markdown("**Emotions:** " + str(r.get("emotions_identified", "")))
         st.markdown("**Temporality:** " + str(r.get("temporality_identified", "")))
         st.markdown("**Conditions of adoption:** " + str(r.get("notable_conditions_of_adoption", "")))
@@ -315,13 +330,13 @@ def show_result(r: dict, reference: dict = None):
     if ori in WE_ORIENTATION_GUIDANCE:
         we = WE_ORIENTATION_GUIDANCE[ori]
         with st.expander("Policy guidance for this orientation"):
-            st.write(POLICY_ORIENTATION_GUIDANCE[ori]["implications"])
-            st.markdown(f"**Recommended action:** {we['policy_action']}")
+            st.write(_neutral(POLICY_ORIENTATION_GUIDANCE[ori]["implications"]))
+            st.markdown(f"**Recommended action:** {_neutral(we['policy_action'])}")
             st.caption(TABLE_WE_SOURCE)
         with st.expander("Managerial guidance for this orientation"):
-            st.write(MANAGER_ORIENTATION_GUIDANCE[ori]["implications"])
-            st.markdown(f"**Intervention:** {we['manager_action']}")
-            st.markdown(f"**Caution:** {we['manager_caution']}")
+            st.write(_neutral(MANAGER_ORIENTATION_GUIDANCE[ori]["implications"]))
+            st.markdown(f"**Intervention:** {_neutral(we['manager_action'])}")
+            st.markdown(f"**Caution:** {_neutral(we['manager_caution'])}")
             st.caption(TABLE_WE_SOURCE)
 
     st.caption(INTERPRETIVE_USE_NOTE)
@@ -841,11 +856,11 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_tex
         mg = MANAGER_ORIENTATION_GUIDANCE[o]
         we = WE_ORIENTATION_GUIDANCE[o]
         with st.expander(f"{ORI_LABEL[o]}: managerial implications"):
-            st.write(mg["implications"])
+            st.write(_neutral(mg["implications"]))
             _render_adapted_block(valid, o)
-            st.markdown(f"**Intervention:** {we['manager_action']}")
-            st.markdown(f"**Caution:** {we['manager_caution']}")
-            st.markdown(f"**Objective:** {mg['objective']}")
+            st.markdown(f"**Intervention:** {_neutral(we['manager_action'])}")
+            st.markdown(f"**Caution:** {_neutral(we['manager_caution'])}")
+            st.markdown(f"**Objective:** {_neutral(mg['objective'])}")
     st.markdown("**Messaging (managerial roadmap, step 5)**")
     st.write(WE_MESSAGING_RULE)
 
@@ -855,33 +870,13 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_tex
         pg = POLICY_ORIENTATION_GUIDANCE[o]
         we = WE_ORIENTATION_GUIDANCE[o]
         with st.expander(f"{ORI_LABEL[o]}: policy implications"):
-            st.write(pg["implications"])
+            st.write(_neutral(pg["implications"]))
             _render_adapted_block(valid, o)
-            st.markdown(f"**Recommended action:** {we['policy_action']}")
+            st.markdown(f"**Recommended action:** {_neutral(we['policy_action'])}")
             st.markdown("**What to monitor:**")
             for m in pg["monitor"]:
-                st.markdown(f"- {m}")
-            st.markdown(f"**Objective:** {pg['objective']}")
-
-    st.markdown(
-        "**Additional information to consider.** These suggestions come only from the manuscript and its Web Appendix.\n\n"
-        "- **Data source for each comment.** Table 1 separates interviews, news media, archival documents, "
-        "public consultations, social media, and forum threads. Recording the source keeps institutional and "
-        "media texts apart from consumer comments.\n"
-        "- **Narrative, temporality, and condition of adoption for each comment.** Table 2 defines these for each "
-        "orientation. The tool already returns them; adding them to the results table allows checking against Table 2.\n"
-        "- **The prescribed future used as reference.** Record the exact statement used, such as the 2023 National "
-        "Electric Vehicle Strategy and its 35% reduction target by 2030, described in the research context.\n"
-        "- **Full conversation sequences.** Figure 2 and the vignettes in Web Appendix D (Figures WD1 to WD3) show how "
-        "one performance responds to another. Keep thread and parent-comment links so sequences can be reviewed in order.\n"
-        "- **Coding examples (Web Appendix B, Table WB1).** Record which excerpt supports each orientation and activity, "
-        "so each classification can be traced to the coding structure.\n"
-        "- **Enacted future-making without future language.** Consumers can enact a preferred future while describing "
-        "what they already do. Flag such comments, because keyword-based sampling may under-represent them.\n"
-        "- **Consultation question.** Each consultation response should carry the question or proposal it answers, as described in the data collection section.\n"
-        "- **Monitoring over time.** Steps 6 and 7 of the policymaking roadmap call for measuring progress and revising the intervention. "
-        "A dated log of results supports those steps; a single run cannot show change."
-    )
+                st.markdown(f"- {_neutral(m)}")
+            st.markdown(f"**Objective:** {_neutral(pg['objective'])}")
 
 
 def _show_dashboard(stored: dict, pseudo: bool):
@@ -1085,8 +1080,6 @@ def tab_multiple():
 # ─────────────────────────────────────────
 # APP
 # ─────────────────────────────────────────
-check_password()
-
 st.title("Consumer Future-Making Analyzer")
 with st.expander("About this tool"):
     st.markdown(HOMEPAGE_DESCRIPTION)
