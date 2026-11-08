@@ -581,7 +581,76 @@ def _repeat_participants(valid: list, pseudo: bool) -> list:
             "Orientations used across comments": ", ".join(ordered),
         })
     return rows
+ROADMAP_STATUS = {
+    "generated": "Generated from the data; check against the full comments",
+    "review": "Leads for human review; not a diagnosis",
+    "decision": "Needs a decision by your team",
+    "input": "Defined by you",
+}
 
+
+def _roadmap_integration(valid: list, results: list, pseudo: bool):
+    st.markdown("#### Roadmap integration")
+    st.write(
+        "Each step of the roadmap, with what this dataset shows for it. The manuscript's roadmaps (Figures 3 and 4) "
+        "are sequential in the text but recursive in practice, so you can revisit a step as new data arrive."
+    )
+    choice = st.radio(
+        "Roadmap", ["Policymaking (7 steps)", "Managerial (6 steps)"],
+        horizontal=True, key="roadmap_choice",
+    )
+    is_policy = choice.startswith("Policy")
+    steps = POLICY_ROADMAP_STEPS if is_policy else MANAGER_ROADMAP_STEPS
+
+    coex = orientation_coexistence(valid)
+    candidates = compute_challenge_review_candidates(results)
+    n_conv = len(candidates["CONVOLUTED_EVALUATIONS"])
+    n_conf = len(candidates["CONFRONTATIONAL_NEGOTIATIONS"])
+    n_comp = len(candidates["COMPETING_ENACTMENTS"])
+    n_enact = sum(1 for r in valid if _clean_enum(r.get("main_activity", "")).upper() == "ENACTMENT")
+    top = max(ORIENTATION_ORDER, key=lambda o: coex["counts"][o])
+    shares = ", ".join(f"{ORI_LABEL[o]} {coex['counts'][o]}" for o in ORIENTATION_ORDER if coex["counts"][o])
+    pf_text = st.session_state.get("pf_multi", "").strip()
+
+    if is_policy:
+        content = {
+            1: (f"Prescribed future: {pf_text[:200]}", "input"),
+            2: (f"Orientations in this set: {shares} ({coex['n_present']} of 4 present).", "generated"),
+            3: (f"Linked pairs to review: convoluted evaluations {n_conv}, "
+                f"confrontational negotiations {n_conf}, competing enactments {n_comp}.", "review"),
+            4: (f"Largest group: {ORI_LABEL[top]} ({coex['counts'][top]} comments). "
+                "Choose support measures for each orientation present (see the policy implications).", "decision"),
+            5: (f"Comments reporting enactment: {n_enact} of {len(valid)}. Decide which infrastructure "
+                "and capabilities consumers need.", "decision"),
+            6: ("A single run is one snapshot. Measuring progress needs a dated log of repeated runs.", "decision"),
+            7: ("Revision depends on steps 4 to 6 and on the measurements in step 6.", "decision"),
+        }
+    else:
+        content = {
+            1: (f"Prescribed future: {pf_text[:200]}", "input"),
+            2: (f"Orientations in this set: {shares} ({coex['n_present']} of 4 present).", "generated"),
+            3: (f"Linked pairs to review: convoluted evaluations {n_conv}, "
+                f"confrontational negotiations {n_conf}, competing enactments {n_comp}.", "review"),
+            4: (f"Largest group: {ORI_LABEL[top]} ({coex['counts'][top]} comments). "
+                "Choose support strategies sensitive to the orientations present.", "decision"),
+            5: ("Check whether current messages mobilize one orientation while alienating others.", "decision"),
+            6: (f"Comments reporting enactment: {n_enact} of {len(valid)}. Decide where consumers need support "
+                "at each touchpoint.", "decision"),
+        }
+
+    rows = []
+    for num, title, _ in steps:
+        text, status = content[int(num)]
+        rows.append({
+            "Step": f"{num}. {title}",
+            "What this dataset shows": text,
+            "Status": ROADMAP_STATUS[status],
+        })
+    st.dataframe(pd.DataFrame(rows), hide_index=True)
+    st.caption(
+        "Only steps 1 to 3 can be partly generated from the data. The other steps depend on decisions "
+        "that the manuscript assigns to policymakers or managers."
+    )
 
 def _render_analysis(valid: list, results: list, pseudo: bool, reference):
     coex = orientation_coexistence(valid)
