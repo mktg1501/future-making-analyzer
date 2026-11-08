@@ -8,7 +8,6 @@ import html
 import json
 import logging
 import os
-import re
 from collections import Counter
 
 import pandas as pd
@@ -22,10 +21,9 @@ st.set_page_config(
 
 from motor import (
     CONTEXT_TYPE_CHOICES, DEMO_BY_ID, DEMO_CONVERSATION, DEMO_CONVERSATION_REFERENCE,
-    GUIDANCE_SOURCE, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE, LABELED_THREAD,
-    MANAGER_MESSAGING_NOTE, MANAGER_ORIENTATION_GUIDANCE, MANAGER_ROADMAP_STEPS,
-    MAX_COMMENTS, ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV,
-    POLICY_ORIENTATION_GUIDANCE, POLICY_ROADMAP_STEPS, analyze_comment, analyze_document,
+    HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE, LABELED_THREAD, MANAGER_ORIENTATION_GUIDANCE,
+    MANAGER_ROADMAP_STEPS, MAX_COMMENTS, ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL,
+    PF_EV, POLICY_ORIENTATION_GUIDANCE, POLICY_ROADMAP_STEPS, analyze_comment, analyze_document,
     build_comment_records_from_consultation, build_comment_records_from_csv,
     build_comment_records_from_paragraphs, build_comment_records_from_user_labels,
     compute_challenge_review_candidates, compute_dominant_distributions,
@@ -42,12 +40,6 @@ CTX_LABEL = {code: label for label, code, _ in CONTEXT_TYPE_CHOICES}
 CTX_DESC = {code: desc for _, code, desc in CONTEXT_TYPE_CHOICES}
 
 ORI_LABEL = {o: o.title() for o in ORIENTATION_ORDER}
-
-# Keywords the manuscript used to narrow the social media data (informed by LIWC-22).
-FUTURE_KEYWORDS = ("will", "future", "going to", "expect", "hope", "plan", "potential")
-FUTURE_PATTERN = re.compile(
-    r"\b(?:" + "|".join(re.escape(k) for k in FUTURE_KEYWORDS) + r")\b", re.IGNORECASE
-)
 
 EXAMPLE_NOTE = (
     "These examples show how the tool works. The same comments are included in the model's "
@@ -79,10 +71,101 @@ FRAGILITY_NOTE = (
     "only and needs interpretation with the full comments."
 )
 
+TABLE_WE_SOURCE = (
+    "Source: manuscript Web Appendix Tables WE1 (policymaking) and WE2 (managerial), which apply the "
+    "framework to AI-integrated healthcare. The actions are the authors'; the wording is adapted here "
+    "from patients to consumers, and the healthcare examples are not shown."
+)
+
+# ─────────────────────────────────────────
+# GUIDANCE FROM TABLES WE1 AND WE2 (adapted to consumers)
+# ─────────────────────────────────────────
+WE_ORIENTATION_GUIDANCE = {
+    "CATALYZER": {
+        "policy_action": (
+            "Monitor urgency and inevitability narratives, simplified evaluations, advocacy, and early use. "
+            "Do not use early uptake to frame wider adoption as inevitable."
+        ),
+        "manager_action": (
+            "Use early adopters' experiences and testimonials, and document the conditions and limitations "
+            "that made their adoption possible."
+        ),
+        "manager_caution": (
+            "Do not present their experiences as representative or as evidence that adoption is inevitable."
+        ),
+    },
+    "AMBIVALENT": {
+        "policy_action": (
+            "Identify the particular condition behind the hesitation (for example charging, price, servicing, "
+            "or battery life), and direct support toward that condition rather than general information about EVs."
+        ),
+        "manager_action": (
+            "Monitor conditional language, repeated comparison, requests for evidence, trials without continuation, "
+            "and abandoned purchases. Identify the specific unresolved condition."
+        ),
+        "manager_caution": (
+            "Avoid pressure, artificial urgency, and framing hesitation as ignorance."
+        ),
+    },
+    "RESISTANT": {
+        "policy_action": (
+            "Monitor narratives of control and loss of choice, refusals, complaints, and continued reliance on "
+            "current vehicles. Identify what the resistance seeks to protect before choosing a response."
+        ),
+        "manager_action": (
+            "Provide clear disclosure, meaningful opportunities to ask questions, human assistance, and workable "
+            "complaint or escalation routes. Make alternatives visible where they exist, and monitor refusals to "
+            "understand what they protect."
+        ),
+        "manager_caution": (
+            "Avoid \"there is no alternative\", ridicule, and hidden automation of decisions."
+        ),
+    },
+    "EXPANDER": {
+        "policy_action": (
+            "Examine the alternative problem definitions and practices consumers propose, such as public transport, "
+            "cycling, or denser cities. Check whether the intervention is presented as a complete solution when it "
+            "may be one component of a broader strategy."
+        ),
+        "manager_action": (
+            "Monitor claims that the offer does not solve the underlying problem. Invite consumers to describe broader "
+            "preferred futures, and assess whether the offer should be complemented by other pathways."
+        ),
+        "manager_caution": (
+            "Avoid presenting the offer as a complete solution, and avoid dismissing systemic critique as outside "
+            "the organization's responsibility."
+        ),
+    },
+}
+
+WE_MESSAGING_RULE = (
+    "Communicate achievements alongside uncertainty, trade-offs, limitations, enabling conditions, and "
+    "distributional effects. Avoid inevitability and universal-benefit claims. (Table WE2, step 5.)"
+)
+
+# Step-level actions drawn from Tables WE1 and WE2 (adapted), shown in the roadmap integration table.
+WE_POLICY_STEP_ACTIONS = {
+    1: "Define the practices the intervention changes. Check whether the prescribed future depends on conditions (money, equipment, skills, access) that are not evenly distributed.",
+    2: "Combine consultations, complaints, feedback, and accounts of planned or actual practice. Do not infer a consumer's orientation toward one measure from their response to another.",
+    3: "Treat evaluation, negotiation, and enactment as interdependent. Identify whether the main difficulty lies in how the future is evaluated, negotiated, or enacted.",
+    4: "Match support to the orientations and challenges present. The objective is responsible acceleration, not uniform acceleration.",
+    5: "Locate infrastructure and capability support where practices change: purchase, home charging, servicing, and resale.",
+    6: "Measure fairness, understandability, and access alongside adoption. Adoption alone does not show that the prescribed future is stabilizing.",
+    7: "If a measure raises technical performance but intensifies conflict, reconsider how it is framed and supported, then repeat the diagnostic cycle.",
+}
+
+WE_MANAGER_STEP_ACTIONS = {
+    1: "Map the changes each offer asks consumers to make across the customer journey, including whether they must use a product or only change how they access a service.",
+    2: "Use interviews, service data, complaints, opt-outs, and actual use. Locate orientations at specific offers and touchpoints, not permanently at individuals.",
+    3: "Identify which challenge a pattern indicates, rather than treating every divergence as generic resistance.",
+    4: "Choose responses by orientation and challenge. Check whether responding to one orientation intensifies a challenge elsewhere.",
+    5: "Communicate achievements together with uncertainty, trade-offs, and enabling conditions. Avoid inevitability and universal-benefit claims.",
+    6: "Support consumers where they must adjust practice: purchase, charging, servicing, resale, and complaints. Make it easy to pause, reverse, or modify adoption.",
+}
+
 # ─────────────────────────────────────────
 # EXAMPLES
 # ─────────────────────────────────────────
-# Example 1 is Joe (Catalyzer, Negotiation / Advocate). Example 2 is Clara (Ambivalent, Evaluation / Stall).
 SINGLE_EXAMPLE_IDS = ["joe", "clara"]
 
 CONV2_TEXT = """User 1: I bought my EV because it was faster than the comparable ICE car, more spacious, has better range... at least $600 cheaper per quarter on "fuel," requires almost no maintenance or servicing... and gets regular improvements via software updates. It's the most brutally fast and best handling car I ever had!
@@ -229,17 +312,17 @@ def show_result(r: dict, reference: dict = None):
     if r.get("input_scope_warning"):
         st.warning("Input-scope note: " + str(r.get("input_scope_warning")))
 
-    if ori in POLICY_ORIENTATION_GUIDANCE:
+    if ori in WE_ORIENTATION_GUIDANCE:
+        we = WE_ORIENTATION_GUIDANCE[ori]
         with st.expander("Policy guidance for this orientation"):
-            g = POLICY_ORIENTATION_GUIDANCE[ori]
-            st.write(g["implications"])
-            st.markdown(f"**Objective:** {g['objective']}")
+            st.write(POLICY_ORIENTATION_GUIDANCE[ori]["implications"])
+            st.markdown(f"**Recommended action:** {we['policy_action']}")
+            st.caption(TABLE_WE_SOURCE)
         with st.expander("Managerial guidance for this orientation"):
-            g = MANAGER_ORIENTATION_GUIDANCE[ori]
-            st.write(g["implications"])
-            st.markdown(f"**Objective:** {g['objective']}")
-            if g.get("avoid"):
-                st.markdown(f"**Actions to avoid:** {g['avoid']}")
+            st.write(MANAGER_ORIENTATION_GUIDANCE[ori]["implications"])
+            st.markdown(f"**Intervention:** {we['manager_action']}")
+            st.markdown(f"**Caution:** {we['manager_caution']}")
+            st.caption(TABLE_WE_SOURCE)
 
     st.caption(INTERPRETIVE_USE_NOTE)
 
@@ -553,17 +636,6 @@ def _render_reference_comparison(valid: list, reference: dict):
         st.caption(EXAMPLE_NOTE)
 
 
-def _sampling_check(valid: list):
-    without = [r for r in valid if not FUTURE_PATTERN.search(r.get("_comment_text", ""))]
-    st.markdown("**Future-oriented wording check**")
-    st.write(
-        f"{len(without)} of {len(valid)} comment(s) contain none of the future-oriented keywords the manuscript "
-        "used to narrow the social media data. Consumers can enact a preferred future while describing what they "
-        "already do, so these comments may be under-represented by keyword sampling."
-    )
-    st.caption("Approximate check. Keywords: " + ", ".join(FUTURE_KEYWORDS) + ".")
-
-
 def _adjacency_rows(valid: list, pseudo: bool) -> list:
     by_id = {r["_comment_id"]: r for r in valid if r.get("_comment_id")}
     rows = []
@@ -606,7 +678,7 @@ ROADMAP_STATUS_NOTE = (
 )
 
 
-def _roadmap_integration(valid: list, results: list, pseudo: bool):
+def _roadmap_integration(valid: list, results: list, pf_text: str):
     st.markdown("#### Roadmap integration")
     st.write(ROADMAP_STATUS_NOTE)
     choice = st.radio(
@@ -615,6 +687,7 @@ def _roadmap_integration(valid: list, results: list, pseudo: bool):
     )
     is_policy = choice.startswith("Policy")
     steps = POLICY_ROADMAP_STEPS if is_policy else MANAGER_ROADMAP_STEPS
+    we_actions = WE_POLICY_STEP_ACTIONS if is_policy else WE_MANAGER_STEP_ACTIONS
 
     coex = orientation_coexistence(valid)
     candidates = compute_challenge_review_candidates(results)
@@ -624,7 +697,6 @@ def _roadmap_integration(valid: list, results: list, pseudo: bool):
     n_enact = sum(1 for r in valid if _clean_enum(r.get("main_activity", "")).upper() == "ENACTMENT")
     top = max(ORIENTATION_ORDER, key=lambda o: coex["counts"][o])
     shares = ", ".join(f"{ORI_LABEL[o]} {coex['counts'][o]}" for o in ORIENTATION_ORDER if coex["counts"][o])
-    pf_text = st.session_state.get("pf_multi", "").strip()
 
     if is_policy:
         content = {
@@ -654,16 +726,18 @@ def _roadmap_integration(valid: list, results: list, pseudo: bool):
 
     rows = []
     for num, title, _ in steps:
-        text, status = content[int(num)]
+        n = int(num)
+        text, status = content[n]
         rows.append({
             "Step": f"{num}. {title}",
             "What this dataset shows": text,
+            "Table WE action (adapted)": we_actions.get(n, ""),
             "Status": ROADMAP_STATUS[status],
         })
     st.dataframe(pd.DataFrame(rows), hide_index=True)
     st.caption(
         "Only steps 1 to 3 can be partly generated from the data. The other steps depend on decisions "
-        "that the manuscript assigns to policymakers or managers."
+        "that the manuscript assigns to policymakers or managers. " + TABLE_WE_SOURCE
     )
 
 
@@ -701,7 +775,7 @@ def _fragility_indicators(valid: list, results: list):
     st.caption("Keep these indicators separate. Do not add them into a single index.")
 
 
-def _render_analysis(valid: list, results: list, pseudo: bool, reference):
+def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_text: str):
     coex = orientation_coexistence(valid)
     present = coex["present"]
     dist = compute_dominant_distributions(valid)
@@ -736,11 +810,9 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference):
         st.dataframe(pd.DataFrame(list(dist["activity_counts"].items()),
                                   columns=["Activity", "Comments"]), hide_index=True)
 
-    _roadmap_integration(valid, results, pseudo)
+    _roadmap_integration(valid, results, pf_text)
 
     _fragility_indicators(valid, results)
-
-    _sampling_check(valid)
 
     adjacency = _adjacency_rows(valid, pseudo)
     if adjacency:
@@ -763,46 +835,36 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference):
     if reference:
         _render_reference_comparison(valid, reference)
 
-    st.write(
-        "Two sampling limits from the manuscript apply. Public consultation submissions come from self-selected "
-        "participants, and the social media data were narrowed with future-oriented keywords. Read the proportions with these limits in mind."
-    )
-
     st.markdown("#### 2. Managerial implications")
-    st.write(GUIDANCE_SOURCE)
-    st.write(
-        "The manuscript argues that orientations are not fixed segments. For managers, they show how consumers are "
-        "currently approaching the prescribed future, which shapes how support should be designed."
-    )
+    st.caption(TABLE_WE_SOURCE)
     for o in present:
-        g = MANAGER_ORIENTATION_GUIDANCE[o]
+        mg = MANAGER_ORIENTATION_GUIDANCE[o]
+        we = WE_ORIENTATION_GUIDANCE[o]
         with st.expander(f"{ORI_LABEL[o]}: managerial implications"):
-            st.write(g["implications"])
+            st.write(mg["implications"])
             _render_adapted_block(valid, o)
-            st.markdown(f"**Objective:** {g['objective']}")
-            if g.get("avoid"):
-                st.markdown(f"**Actions to avoid:** {g['avoid']}")
+            st.markdown(f"**Intervention:** {we['manager_action']}")
+            st.markdown(f"**Caution:** {we['manager_caution']}")
+            st.markdown(f"**Objective:** {mg['objective']}")
     st.markdown("**Messaging (managerial roadmap, step 5)**")
-    st.write(MANAGER_MESSAGING_NOTE)
+    st.write(WE_MESSAGING_RULE)
 
     st.markdown("#### 3. Public policy implications")
-    st.write(
-        "The manuscript argues that policies should not assume uniform adoption of a prescribed future. Multiple "
-        "pathways can be supported, and interventions should account for the orientations present."
-    )
+    st.caption(TABLE_WE_SOURCE)
     for o in present:
-        g = POLICY_ORIENTATION_GUIDANCE[o]
+        pg = POLICY_ORIENTATION_GUIDANCE[o]
+        we = WE_ORIENTATION_GUIDANCE[o]
         with st.expander(f"{ORI_LABEL[o]}: policy implications"):
-            st.write(g["implications"])
+            st.write(pg["implications"])
             _render_adapted_block(valid, o)
+            st.markdown(f"**Recommended action:** {we['policy_action']}")
             st.markdown("**What to monitor:**")
-            for m in g["monitor"]:
+            for m in pg["monitor"]:
                 st.markdown(f"- {m}")
-            st.markdown(f"**Objective:** {g['objective']}")
+            st.markdown(f"**Objective:** {pg['objective']}")
 
-    st.markdown("#### 4. Suggested additional information")
-    st.caption("Drawn only from the manuscript and its Web Appendix.")
     st.markdown(
+        "**Additional information to consider.** These suggestions come only from the manuscript and its Web Appendix.\n\n"
         "- **Data source for each comment.** Table 1 separates interviews, news media, archival documents, "
         "public consultations, social media, and forum threads. Recording the source keeps institutional and "
         "media texts apart from consumer comments.\n"
@@ -814,8 +876,8 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference):
         "one performance responds to another. Keep thread and parent-comment links so sequences can be reviewed in order.\n"
         "- **Coding examples (Web Appendix B, Table WB1).** Record which excerpt supports each orientation and activity, "
         "so each classification can be traced to the coding structure.\n"
-        "- **Enacted future-making without future language.** The manuscript narrowed the social media data with "
-        "future-oriented keywords. Flag comments that describe present practice without future wording, because they may be under-represented.\n"
+        "- **Enacted future-making without future language.** Consumers can enact a preferred future while describing "
+        "what they already do. Flag such comments, because keyword-based sampling may under-represent them.\n"
         "- **Consultation question.** Each consultation response should carry the question or proposal it answers, as described in the data collection section.\n"
         "- **Monitoring over time.** Steps 6 and 7 of the policymaking roadmap call for measuring progress and revising the intervention. "
         "A dated log of results supports those steps; a single run cannot show change."
@@ -826,8 +888,10 @@ def _show_dashboard(stored: dict, pseudo: bool):
     results = stored["results"]
     valid = [r for r in results if "_error" not in r]
     errors = len(results) - len(valid)
+    pf_text = stored.get("pf", "")
 
     st.success(f"Analysis complete: {len(valid)} of {len(results)} comments classified.")
+    st.markdown(f"**Prescribed future:** {pf_text}")
     if errors:
         st.warning(f"{errors} comment(s) with errors. They are not counted in the results. See the Error column in the table.")
     if stored.get("omitted"):
@@ -862,7 +926,7 @@ def _show_dashboard(stored: dict, pseudo: bool):
             })
         st.dataframe(pd.DataFrame(rows), hide_index=True)
 
-    _render_analysis(valid, results, pseudo, stored.get("reference"))
+    _render_analysis(valid, results, pseudo, stored.get("reference"), pf_text)
 
     with st.expander("How this follows the manuscript's method"):
         st.markdown(
@@ -929,6 +993,7 @@ def tab_multiple():
 
     uploaded, text = None, ""
     if example:
+        st.markdown(f"**Prescribed future for this example:** {PF_EV}")
         st.markdown(
             "**Context type:** Parent comment. Each user is read with the previous user's comment as context; "
             "User 1 has no context."
@@ -1004,6 +1069,7 @@ def tab_multiple():
             "signature": signature,
             "results": results,
             "omitted": omitted,
+            "pf": pf.strip(),
             "reference": example["reference"] if example else None,
         }
 
