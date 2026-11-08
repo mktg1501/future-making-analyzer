@@ -78,12 +78,12 @@ comments, the original post, or the consultation question as interpretive contex
   not classified as consumer orientations.
 * The future-making challenges (Convoluted Evaluations, Confrontational Negotiations, and Competing
   Enactments) and Fragile Futures are qualitative conditions that emerge from patterns across linked
-  discourse, practices, actors, and time. They are never inferred from a single comment and never
-  receive an automatic score or probability.
+  discourse, practices, and time. They are never inferred from a single comment and never receive an
+  automatic score or probability.
 """
 
 # ─────────────────────────────────────────
-# CONTEXT TYPES AND UTILITIES
+# CONTEXT TYPES
 # ─────────────────────────────────────────
 VALID_CONTEXT_TYPES = {"PARENT_REPLY", "THREAD_WINDOW", "ORIGINAL_POST", "CONSULTATION_PROMPT", "NONE"}
 
@@ -218,10 +218,11 @@ Question, Reject, or Contest. If a comment ONLY assesses the prescribed
 future without performing one of these functions, classify it as
 Evaluation.
 
-Reporting another actor's position (for example, a company slowing the transition) does NOT by
-itself establish Negotiation. Negotiation requires that the comment argues for, against, or about
-a collective trajectory. If the comment mainly reports the consumer's own practice change and
-mentions another actor only as background, classify it as Enactment.
+Reporting another actor's position (for example, a company slowing the
+transition) does NOT by itself establish Negotiation. Negotiation requires
+that the comment argues for, against, or about a collective trajectory. If
+the comment mainly reports the consumer's own practice change and mentions
+another actor only as background, classify it as Enactment.
 
 Sub-types (organized by orientation):
   ADVOCATE  (Catalyzer)  -- recruiting others; presenting the transition
@@ -376,6 +377,14 @@ buses?"
 advocacy against an implied alternative: NEGOTIATION / ADVOCATE /
 CATALYZER.
 
+Example (CATALYZER, Enactment/Accelerate) -- Facebook group (Johnny):
+"Toyota is still very much trying to slow down the transition to EVs. We
+have ordered two Teslas that will be delivered hopefully this year. We are
+selling our Prado and it looks like we are going to sell our last Toyota car."
+-> ENACTMENT / ACCELERATE / CATALYZER. The sentence about Toyota is
+background. The comment's function is to report present decisions that
+materialize the prescribed future.
+
 Example (AMBIVALENT, Evaluation/Stall) -- interview (Clara):
 "Living in Outback Northwest Queensland there's no charging stations at
 the time... So if we got an EV it would just be our daily run around."
@@ -419,13 +428,6 @@ Example (RESISTANT, Enactment/Prevent) -- news media comment (StarT):
 "I for one WILL NOT be forced into an elec vehicle and spend half my
 travel time charging the damn thing to go to hell."
 -> ENACTMENT / PREVENT / RESISTANT.
-
-Example (CATALYZER, Enactment/Accelerate) -- Facebook group (Johnny):
-"Toyota is still very much trying to slow down the transition to EVs. We have ordered two Teslas
-that will be delivered hopefully this year. We are selling our Prado and it looks like we are
-going to sell our last Toyota car."
--> ENACTMENT / ACCELERATE / CATALYZER. The sentence about Toyota is background. The comment's
-function is to report present decisions that materialize the prescribed future.
 
 Example (EXPANDER, Enactment/Reroute) -- public consultation (Phillip):
 "I uprooted my life and moved from the Sunshine Coast to Melbourne with
@@ -576,7 +578,7 @@ CHALLENGE_DEFINITIONS = {
 }
 
 FRAGILE_FUTURES_DEFINITION = (
-    "Fragile Futures: multiple, volatile, and conflicting preferred futures that may interfere with "
+    "Fragile futures: multiple, volatile, and conflicting preferred futures that may interfere with "
     "the actualization of the prescribed future. It is a qualitative theoretical condition produced "
     "when differently oriented performances interfere with one another. It is NOT a score, a "
     "probability, or a classification of a single comment."
@@ -586,7 +588,7 @@ FRAGILE_FUTURES_DEFINITION = (
 # GUIDANCE CONTENT
 # Wording follows the manuscript's Discussion (implications for policymakers and managerial
 # practitioners), Table 2, and the text describing Figures 3 and 4. The actions listed in
-# Web Appendix Tables WE1 and WE2 were not available for this version and are NOT included.
+# Web Appendix Tables WE1 and WE2 were not available and are NOT included.
 # ═══════════════════════════════════════════════════════════════
 GUIDANCE_SOURCE = (
     "Wording follows the manuscript's Discussion (implications for policymakers and managerial "
@@ -733,7 +735,7 @@ MANAGER_ORIENTATION_GUIDANCE = {
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["CATALYZER"]["monitor"],
         "objective": "Use their experience to normalize the change and bring other consumers along.",
-        "avoid": "Not included in this version. Web Appendix Table WE2 lists the actions to avoid; add them here after checking that table.",
+        "avoid": None,  # Web Appendix Table WE2 not yet provided; the interface hides this line when empty.
     },
     "AMBIVALENT": {
         "lens": POLICY_ORIENTATION_GUIDANCE["AMBIVALENT"]["lens"],
@@ -743,7 +745,7 @@ MANAGER_ORIENTATION_GUIDANCE = {
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["AMBIVALENT"]["monitor"],
         "objective": "Address the specific conditions these consumers name, and avoid rushing their decisions.",
-        "avoid": "Not included in this version. Web Appendix Table WE2 lists the actions to avoid; add them here after checking that table.",
+        "avoid": None,
     },
     "RESISTANT": {
         "lens": POLICY_ORIENTATION_GUIDANCE["RESISTANT"]["lens"],
@@ -753,7 +755,7 @@ MANAGER_ORIENTATION_GUIDANCE = {
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["RESISTANT"]["monitor"],
         "objective": "Understand the reasons for pushback and make sure messaging does not alienate these consumers.",
-        "avoid": "Not included in this version. Web Appendix Table WE2 lists the actions to avoid; add them here after checking that table.",
+        "avoid": None,
     },
     "EXPANDER": {
         "lens": POLICY_ORIENTATION_GUIDANCE["EXPANDER"]["lens"],
@@ -763,7 +765,7 @@ MANAGER_ORIENTATION_GUIDANCE = {
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["EXPANDER"]["monitor"],
         "objective": "Consider the systemic issues these consumers raise and identify complementary or alternative pathways.",
-        "avoid": "Not included in this version. Web Appendix Table WE2 lists the actions to avoid; add them here after checking that table.",
+        "avoid": None,
     },
 }
 
@@ -821,6 +823,7 @@ MANAGER_MESSAGING_NOTE = (
     "Message framing should ensure that one orientation is not mobilized while others are alienated. "
     "(Manuscript, managerial roadmap, step 5.)"
 )
+
 # ─────────────────────────────────────────
 # PAPER EXAMPLES (demonstration and internal check)
 # ─────────────────────────────────────────
@@ -1010,7 +1013,9 @@ def enforce_consistency(result: dict) -> dict:
         if not (a and s and o):
             notes.append(f"secondary {i + 1} discarded (incomplete)")
             continue
-        if (a, s, o) == main or any((a, s, o) == (x["activity"], x["activity_subtype"], x["orientation"]) for x in secondary):
+        if (a, s, o) == main or any(
+            (a, s, o) == (x["activity"], x["activity_subtype"], x["orientation"]) for x in secondary
+        ):
             continue
         notes += [f"secondary {i + 1}: {x}" for x in n]
         item.update(activity=a, activity_subtype=s, orientation=o)
@@ -1079,7 +1084,8 @@ def analyze_comment(prescribed_future: str, focal_text: str, context_text: str =
         context_label = "CONSULTATION/POLICY CONTEXT -- USE FOR INTERPRETATION BUT DO NOT CLASSIFY"
     else:
         focal_label = "FOCAL COMMENT TO CLASSIFY"
-        context_label = "CONTEXT (parent comment / nearby comments / original post) -- USE FOR INTERPRETATION BUT DO NOT CLASSIFY"
+        context_label = ("CONTEXT (parent comment / nearby comments / original post) -- "
+                         "USE FOR INTERPRETATION BUT DO NOT CLASSIFY")
 
     context_available = bool((context_text or "").strip())
     context_block = context_text.strip() if context_available else "No context is available for this comment."
@@ -1529,6 +1535,8 @@ def run_framework_validation() -> list:
             == e["referencia"]["subtype"] for e in DEMO_EXAMPLES), "")
     add("Demo examples cover all 4 orientations",
         {e["referencia"]["orientation"] for e in DEMO_EXAMPLES} == REQUIRED_ORIENTATIONS, "")
+    add("Interface examples (joe, clara) exist",
+        "joe" in DEMO_BY_ID and "clara" in DEMO_BY_ID, "")
     add("Demo conversation: one reference per orientation",
         {v["orientation"] for v in DEMO_CONVERSATION_REFERENCE.values()} == REQUIRED_ORIENTATIONS
         and len(DEMO_CONVERSATION_REFERENCE) == 4, "")
