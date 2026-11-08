@@ -28,9 +28,10 @@ from motor import (
     POLICY_ORIENTATION_GUIDANCE, POLICY_ROADMAP_STEPS, analyze_comment, analyze_document,
     build_comment_records_from_consultation, build_comment_records_from_csv,
     build_comment_records_from_paragraphs, build_comment_records_from_user_labels,
-    compute_dominant_distributions, ensure_unique_ids, has_comment_text_column,
-    orientation_coexistence, orientations_by_thread, prepare_records, pseudonymize,
-    select_within_limit, _clean_enum,
+    compute_challenge_review_candidates, compute_dominant_distributions,
+    ensure_unique_ids, has_comment_text_column, orientation_coexistence,
+    orientations_by_thread, prepare_records, pseudonymize, select_within_limit,
+    _clean_enum,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -65,10 +66,18 @@ PII_CONSENT_LABEL = "I confirm that this text contains no Personally Identifiabl
 SRC_CONSUMER = "Consumer-generated text (interviews, social media, forums, public consultation submissions)"
 SRC_INSTITUTIONAL = "Institutional or media text (news, archival, policy documents)"
 
+ROADMAP_STATUS = {
+    "generated": "Generated from the data; check against the full comments",
+    "review": "Leads for human review; not a diagnosis",
+    "decision": "Needs a decision by your team",
+    "input": "Defined by you",
+}
+
 # ─────────────────────────────────────────
 # EXAMPLES
 # ─────────────────────────────────────────
-SINGLE_EXAMPLE_IDS = ["johnny", "clara"]
+# Example 1 is Joe (Catalyzer, Negotiation / Advocate). Example 2 is Clara (Ambivalent, Evaluation / Stall).
+SINGLE_EXAMPLE_IDS = ["joe", "clara"]
 
 CONV2_TEXT = """User 1: I bought my EV because it was faster than the comparable ICE car, more spacious, has better range... at least $600 cheaper per quarter on "fuel," requires almost no maintenance or servicing... and gets regular improvements via software updates. It's the most brutally fast and best handling car I ever had!
 
@@ -258,6 +267,7 @@ def _render_example_intro(ex: dict):
     st.markdown(f"**Context type:** {CTX_LABEL[ctype]}")
     st.caption(CTX_DESC[ctype])
     st.markdown(f"**Context provided:** {ex['context'] or 'None. The comment is interpreted on its own.'}")
+    st.caption(f"Why this reference: {ex['nota_paper']}")
 
 
 @st.cache_data(show_spinner=False, max_entries=64)
@@ -525,10 +535,10 @@ def _render_reference_comparison(valid: list, reference: dict):
                 _clean_enum(r.get("main_orientation", "")).upper())
         exp = (ref["activity"], ref["subtype"], ref["orientation"])
         rows.append({
-            "Replying participant": _author_label(r, pseudo) or r["_comment_id"],
-            "Responds to": _author_label(parent, pseudo) or parent["_comment_id"],
-            "Previous comment": _label3(parent),
-            "Reply": _label3(r),
+            "Participant": r["_comment_id"],
+            "Reference": f"{exp[2].title()} · {exp[0].title()} / {exp[1].title()}",
+            "Model": f"{pred[2].title()} · {pred[0].title()} / {pred[1].title()}",
+            "Match": "Yes" if pred == exp else "No",
         })
     if rows:
         st.markdown("**Comparison with the reference classification**")
@@ -555,7 +565,7 @@ def _adjacency_rows(valid: list, pseudo: bool) -> list:
         if not parent:
             continue
         rows.append({
-            "Reply": _author_label(r, pseudo) or r["_comment_id"],
+            "Replying participant": _author_label(r, pseudo) or r["_comment_id"],
             "Responds to": _author_label(parent, pseudo) or parent["_comment_id"],
             "Previous comment": _label3(parent),
             "Reply": _label3(r),
@@ -581,20 +591,17 @@ def _repeat_participants(valid: list, pseudo: bool) -> list:
             "Orientations used across comments": ", ".join(ordered),
         })
     return rows
-ROADMAP_STATUS = {
-    "generated": "Generated from the data; check against the full comments",
-    "review": "Leads for human review; not a diagnosis",
-    "decision": "Needs a decision by your team",
-    "input": "Defined by you",
-}
+
+
+ROADMAP_STATUS_NOTE = (
+    "Each step of the roadmap, with what this dataset shows for it. The manuscript's roadmaps (Figures 3 and 4) "
+    "are sequential in the text but recursive in practice, so you can revisit a step as new data arrive."
+)
 
 
 def _roadmap_integration(valid: list, results: list, pseudo: bool):
     st.markdown("#### Roadmap integration")
-    st.write(
-        "Each step of the roadmap, with what this dataset shows for it. The manuscript's roadmaps (Figures 3 and 4) "
-        "are sequential in the text but recursive in practice, so you can revisit a step as new data arrive."
-    )
+    st.write(ROADMAP_STATUS_NOTE)
     choice = st.radio(
         "Roadmap", ["Policymaking (7 steps)", "Managerial (6 steps)"],
         horizontal=True, key="roadmap_choice",
@@ -652,6 +659,7 @@ def _roadmap_integration(valid: list, results: list, pseudo: bool):
         "that the manuscript assigns to policymakers or managers."
     )
 
+
 def _render_analysis(valid: list, results: list, pseudo: bool, reference):
     coex = orientation_coexistence(valid)
     present = coex["present"]
@@ -686,6 +694,8 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference):
         )
         st.dataframe(pd.DataFrame(list(dist["activity_counts"].items()),
                                   columns=["Activity", "Comments"]), hide_index=True)
+
+    _roadmap_integration(valid, results, pseudo)
 
     _sampling_check(valid)
 
@@ -730,9 +740,6 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference):
             st.markdown(f"**Actions to avoid:** {g['avoid']}")
     st.markdown("**Messaging (managerial roadmap, step 5)**")
     st.write(MANAGER_MESSAGING_NOTE)
-    with st.expander("Managerial roadmap (6 steps)"):
-        for num, title, text in MANAGER_ROADMAP_STEPS:
-            st.markdown(f"**Step {num}. {title}.** {text}")
 
     st.markdown("#### 3. Public policy implications")
     st.write(
@@ -748,9 +755,6 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference):
             for m in g["monitor"]:
                 st.markdown(f"- {m}")
             st.markdown(f"**Objective:** {g['objective']}")
-    with st.expander("Policymaking roadmap (7 steps)"):
-        for num, title, text in POLICY_ROADMAP_STEPS:
-            st.markdown(f"**Step {num}. {title}.** {text}")
 
     st.markdown("#### 4. Suggested additional information")
     st.caption("Drawn only from the manuscript and its Web Appendix.")
