@@ -8,6 +8,8 @@ import html
 import json
 import logging
 import os
+import re
+from collections import Counter
 
 import pandas as pd
 import streamlit as st
@@ -19,11 +21,11 @@ st.set_page_config(
 )
 
 from motor import (
-    CONTEXT_TYPE_CHOICES, CROSS_ORIENTATION_NOTE, DEMO_BY_ID, DEMO_CONVERSATION,
-    DEMO_CONVERSATION_REFERENCE, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE,
-    LABELED_THREAD, MANAGER_MESSAGING_NOTE, MANAGER_ORIENTATION_GUIDANCE, MAX_COMMENTS,
-    ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV,
-    POLICY_ORIENTATION_GUIDANCE, analyze_comment, analyze_document,
+    CONTEXT_TYPE_CHOICES, DEMO_BY_ID, DEMO_CONVERSATION, DEMO_CONVERSATION_REFERENCE,
+    GUIDANCE_SOURCE, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE, LABELED_THREAD,
+    MANAGER_MESSAGING_NOTE, MANAGER_ORIENTATION_GUIDANCE, MANAGER_ROADMAP_STEPS,
+    MAX_COMMENTS, ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV,
+    POLICY_ORIENTATION_GUIDANCE, POLICY_ROADMAP_STEPS, analyze_comment, analyze_document,
     build_comment_records_from_consultation, build_comment_records_from_csv,
     build_comment_records_from_paragraphs, build_comment_records_from_user_labels,
     compute_dominant_distributions, ensure_unique_ids, has_comment_text_column,
@@ -40,6 +42,12 @@ CTX_DESC = {code: desc for _, code, desc in CONTEXT_TYPE_CHOICES}
 
 ORI_LABEL = {o: o.title() for o in ORIENTATION_ORDER}
 
+# Keywords the manuscript used to narrow the social media data (informed by LIWC-22).
+FUTURE_KEYWORDS = ("will", "future", "going to", "expect", "hope", "plan", "potential")
+FUTURE_PATTERN = re.compile(
+    r"\b(?:" + "|".join(re.escape(k) for k in FUTURE_KEYWORDS) + r")\b", re.IGNORECASE
+)
+
 EXAMPLE_NOTE = (
     "These examples show how the tool works. The same comments are included in the model's "
     "instructions, so they do not measure the tool's accuracy."
@@ -54,8 +62,11 @@ PRIVACY_NOTICE = (
 
 PII_CONSENT_LABEL = "I confirm that this text contains no Personally Identifiable Information (PII)."
 
+SRC_CONSUMER = "Consumer-generated text (interviews, social media, forums, public consultation submissions)"
+SRC_INSTITUTIONAL = "Institutional or media text (news, archival, policy documents)"
+
 # ─────────────────────────────────────────
-# EXAMPLES (two single-comment examples and two conversation examples)
+# EXAMPLES
 # ─────────────────────────────────────────
 SINGLE_EXAMPLE_IDS = ["johnny", "clara"]
 
@@ -89,14 +100,15 @@ CONVERSATION_EXAMPLES = {
         "text": CONV2_TEXT,
         "reference": CONV2_REFERENCE,
         "source_note": (
-            "Social media thread quoted in the manuscript. The manuscript labels this thread by "
-            "orientation only; the activity labels are a proposed coding that researchers should check."
+            "Social media thread from the manuscript's competing enactments example. The manuscript labels "
+            "this thread by orientation only; the activity labels are a proposed coding that researchers "
+            "should check before use."
         ),
     },
 }
 CONVERSATION_BY_LABEL = {v["label"]: v for v in CONVERSATION_EXAMPLES.values()}
 
-# Manuscript Table 2 (orientation definitions), used as reference in the analysis section.
+# Manuscript Table 2: orientation definitions.
 TABLE2 = {
     "CATALYZER": {
         "narrative": "Urgency narrative",
@@ -211,7 +223,7 @@ def show_result(r: dict, reference: dict = None):
             g = MANAGER_ORIENTATION_GUIDANCE[ori]
             st.write(g["implications"])
             st.markdown(f"**Objective:** {g['objective']}")
-            st.markdown(f"**Avoid:** {g['avoid']}")
+            st.markdown(f"**Actions to avoid:** {g['avoid']}")
 
     st.caption(INTERPRETIVE_USE_NOTE)
 
@@ -250,8 +262,7 @@ def _render_example_intro(ex: dict):
 
 @st.cache_data(show_spinner=False, max_entries=64)
 def _classify_example(pf: str, comment: str, context: str, ctype: str, allow_secondary: bool) -> dict:
-    """Examples are public text from the manuscript, so caching them is safe. Each example
-    calls the model once per server session."""
+    """Examples are public text from the manuscript, so caching them is safe."""
     return analyze_comment(pf, comment, context, ctype, False, allow_secondary=allow_secondary)
 
 
@@ -423,6 +434,12 @@ def _author_label(r: dict, pseudo: bool) -> str:
     return pseudonymize(author) if pseudo else author
 
 
+def _label3(r: dict) -> str:
+    return (f"{_clean_enum(r.get('main_orientation', '')).title()} · "
+            f"{_clean_enum(r.get('main_activity', '')).title()} / "
+            f"{_clean_enum(r.get('activity_subtype', '')).title()}")
+
+
 def _render_pie(coex: dict):
     values = [{
         "orientation": ORI_LABEL[o],
@@ -461,7 +478,40 @@ def _coexistence_sentence(coex: dict) -> str:
                 "so no coexistence is observed.")
     names = ", ".join(ORI_LABEL[o] for o in coex["present"])
     return (f"{coex['n_present']} of 4 orientations coexist in this set: {names}. "
-            "Coexistence describes the pattern in these comments; it does not classify people.")
+            "This describes the pattern in these comments; it does not classify people.")
+
+
+def _adapted(valid: list, ori: str) -> dict:
+    """Summarizes what the model found for one orientation in THIS dataset."""
+    rows = [r for r in valid if _clean_enum(r.get("main_orientation", "")).upper() == ori]
+    narratives = Counter(str(r.get("narrative_identified", "")).strip()
+                         for r in rows if str(r.get("narrative_identified", "")).strip())
+    conditions = [str(r.get("notable_conditions_of_adoption", "")).strip() for r in rows
+                  if str(r.get("notable_conditions_of_adoption", "")).strip()]
+    quotes = [str(r.get("supporting_text", "")).strip() for r in rows
+              if str(r.get("supporting_text", "")).strip()]
+    return {"n": len(rows), "narratives": narratives.most_common(3),
+            "conditions": conditions[:3], "quotes": quotes[:2]}
+
+
+def _adapted_text(a: dict) -> str:
+    if a["n"] == 0:
+        return ""
+    parts = [f"{a['n']} comment(s) in this set."]
+    if a["narratives"]:
+        parts.append("Narratives the model identified: " +
+                     "; ".join(f"{n} ({c})" for n, c in a["narratives"]) + ".")
+    if a["conditions"]:
+        parts.append("Conditions the model identified: " + " | ".join(a["conditions"]) + ".")
+    return " ".join(parts)
+
+
+def _render_adapted_block(valid: list, ori: str):
+    a = _adapted(valid, ori)
+    st.markdown("**In this dataset:** " + _adapted_text(a))
+    for q in a["quotes"]:
+        st.markdown("> " + q)
+    st.caption("Labels come from the model. Check them against the complete comments before relying on them.")
 
 
 def _render_reference_comparison(valid: list, reference: dict):
@@ -486,23 +536,66 @@ def _render_reference_comparison(valid: list, reference: dict):
         st.caption(EXAMPLE_NOTE)
 
 
-def _render_analysis(valid: list):
+def _sampling_check(valid: list):
+    without = [r for r in valid if not FUTURE_PATTERN.search(r.get("_comment_text", ""))]
+    st.markdown("**Future-oriented wording check**")
+    st.write(
+        f"{len(without)} of {len(valid)} comment(s) contain none of the future-oriented keywords the manuscript "
+        "used to narrow the social media data. Consumers can enact a preferred future while describing what they "
+        "already do, so these comments may be under-represented by keyword sampling."
+    )
+    st.caption("Approximate check. Keywords: " + ", ".join(FUTURE_KEYWORDS) + ".")
+
+
+def _adjacency_rows(valid: list, pseudo: bool) -> list:
+    by_id = {r["_comment_id"]: r for r in valid if r.get("_comment_id")}
+    rows = []
+    for r in valid:
+        parent = by_id.get(r.get("_parent_comment_id"))
+        if not parent:
+            continue
+        rows.append({
+            "Reply": _author_label(r, pseudo) or r["_comment_id"],
+            "Responds to": _author_label(parent, pseudo) or parent["_comment_id"],
+            "Previous comment": _label3(parent),
+            "Reply": _label3(r),
+        })
+    return rows
+
+
+def _repeat_participants(valid: list, pseudo: bool) -> list:
+    groups = {}
+    for r in valid:
+        author = r.get("_author", "")
+        if author:
+            groups.setdefault(author, []).append(r)
+    rows = []
+    for author, rs in groups.items():
+        if len(rs) < 2:
+            continue
+        oris = {_clean_enum(r.get("main_orientation", "")).upper() for r in rs}
+        ordered = [ORI_LABEL[o] for o in ORIENTATION_ORDER if o in oris]
+        rows.append({
+            "Participant": pseudonymize(author) if pseudo else author,
+            "Comments": len(rs),
+            "Orientations used across comments": ", ".join(ordered),
+        })
+    return rows
+
+
+def _render_analysis(valid: list, results: list, pseudo: bool, reference):
     coex = orientation_coexistence(valid)
     present = coex["present"]
     dist = compute_dominant_distributions(valid)
 
     st.markdown("### Analysis and implications")
-    st.caption(
-        "Based only on the manuscript and its Web Appendix. Each comment is counted once, "
-        "by its dominant activity and orientation."
-    )
+    st.caption("Based on the manuscript and its Web Appendix. Each comment is counted once, by its dominant activity and orientation.")
 
     st.markdown("#### 1. Analysis of the results")
     st.write(_coexistence_sentence(coex))
     st.write(
-        "The manuscript describes the four orientations as socially patterned ways of performing "
-        "future-making, each with its own narrative, goal, temporality, and notable condition of adoption. "
-        "The table below gives the manuscript's definition for each orientation in this set."
+        "The manuscript describes the four orientations as socially patterned ways of performing future-making. "
+        "Each has its own narrative, goal, temporality, and notable condition of adoption (Table 2)."
     )
     st.dataframe(pd.DataFrame([{
         "Orientation": ORI_LABEL[o],
@@ -513,43 +606,82 @@ def _render_analysis(valid: list):
     } for o in present]), hide_index=True)
     st.caption("Source: manuscript, Table 2.")
 
+    for o in present:
+        with st.expander(f"{ORI_LABEL[o]}: {coex['counts'][o]} comment(s), {coex['shares'][o]:.0%} of the set"):
+            _render_adapted_block(valid, o)
+
     if dist["activity_counts"]:
         st.write(
-            "Evaluation, negotiation, and enactment are interdependent in the manuscript. This tool records "
-            "only the dominant activity of each comment, so these counts describe the main function of each "
-            "comment, not everything it contains."
+            "Evaluation, negotiation, and enactment are interdependent in the manuscript. This tool records only the "
+            "dominant activity of each comment, so these counts describe each comment's main function, not everything it contains."
         )
         st.dataframe(pd.DataFrame(list(dist["activity_counts"].items()),
                                   columns=["Activity", "Comments"]), hide_index=True)
 
+    _sampling_check(valid)
+
+    adjacency = _adjacency_rows(valid, pseudo)
+    if adjacency:
+        st.markdown("**Replies compared with the comment they answer**")
+        st.write(
+            "This table is descriptive. It shows which orientation and activity each reply has, next to the "
+            "comment it responds to. It does not show that one performance caused the other."
+        )
+        st.dataframe(pd.DataFrame(adjacency), hide_index=True)
+
+    repeats = _repeat_participants(valid, pseudo)
+    if repeats:
+        st.markdown("**Participants with more than one comment**")
+        st.write(
+            "Where the same participant appears more than once, this shows which orientations they used. The data "
+            "show orientations in use across comments; they do not show how or why a participant changed."
+        )
+        st.dataframe(pd.DataFrame(repeats), hide_index=True)
+
+    if reference:
+        _render_reference_comparison(valid, reference)
+
     st.write(
-        "Two sampling limits from the manuscript apply. Public consultation submissions come from "
-        "self-selected participants, and the social media data were narrowed with future-oriented keywords. "
-        "Read the proportions with these limits in mind."
+        "Two sampling limits from the manuscript apply. Public consultation submissions come from self-selected "
+        "participants, and the social media data were narrowed with future-oriented keywords. Read the proportions with these limits in mind."
     )
 
     st.markdown("#### 2. Managerial implications")
+    st.write(GUIDANCE_SOURCE)
     st.write(
-        "The manuscript argues that orientations are not fixed segments. For managers, they indicate how "
-        "consumers are currently approaching the prescribed future, and therefore how support should be shaped."
+        "The manuscript argues that orientations are not fixed segments. For managers, they show how consumers are "
+        "currently approaching the prescribed future, which shapes how support should be designed."
     )
     for o in present:
         g = MANAGER_ORIENTATION_GUIDANCE[o]
-        with st.expander(f"{ORI_LABEL[o]}: {coex['counts'][o]} comment(s)"):
+        with st.expander(f"{ORI_LABEL[o]}: managerial implications"):
             st.write(g["implications"])
+            _render_adapted_block(valid, o)
             st.markdown(f"**Objective:** {g['objective']}")
-            st.markdown(f"**Avoid:** {g['avoid']}")
+            st.markdown(f"**Actions to avoid:** {g['avoid']}")
+    st.markdown("**Messaging (managerial roadmap, step 5)**")
+    st.write(MANAGER_MESSAGING_NOTE)
+    with st.expander("Managerial roadmap (6 steps)"):
+        for num, title, text in MANAGER_ROADMAP_STEPS:
+            st.markdown(f"**Step {num}. {title}.** {text}")
 
     st.markdown("#### 3. Public policy implications")
     st.write(
-        "The manuscript argues that policies should not assume uniform adoption of a prescribed future. "
-        "Multiple pathways can be supported, and interventions should account for the orientations present."
+        "The manuscript argues that policies should not assume uniform adoption of a prescribed future. Multiple "
+        "pathways can be supported, and interventions should account for the orientations present."
     )
     for o in present:
         g = POLICY_ORIENTATION_GUIDANCE[o]
-        with st.expander(f"{ORI_LABEL[o]}: {coex['counts'][o]} comment(s)"):
+        with st.expander(f"{ORI_LABEL[o]}: policy implications"):
             st.write(g["implications"])
+            _render_adapted_block(valid, o)
+            st.markdown("**What to monitor:**")
+            for m in g["monitor"]:
+                st.markdown(f"- {m}")
             st.markdown(f"**Objective:** {g['objective']}")
+    with st.expander("Policymaking roadmap (7 steps)"):
+        for num, title, text in POLICY_ROADMAP_STEPS:
+            st.markdown(f"**Step {num}. {title}.** {text}")
 
     st.markdown("#### 4. Suggested additional information")
     st.caption("Drawn only from the manuscript and its Web Appendix.")
@@ -557,25 +689,19 @@ def _render_analysis(valid: list):
         "- **Data source for each comment.** Table 1 separates interviews, news media, archival documents, "
         "public consultations, social media, and forum threads. Recording the source keeps institutional and "
         "media texts apart from consumer comments.\n"
-        "- **Narrative, temporality, and condition of adoption for each comment.** Table 2 defines these for "
-        "each orientation. The tool already returns them; adding them as columns to the results table would "
-        "allow checking against Table 2.\n"
-        "- **The prescribed future used as reference.** Orientations are defined relative to the prescribed "
-        "future. Record the exact statement used, such as the 2023 National Electric Vehicle Strategy and its "
-        "35% reduction target by 2030, described in the manuscript's research context.\n"
-        "- **Full conversation sequences.** Figure 2 and the vignettes in Web Appendix D (Figures WD1 to WD3, "
-        "referenced in the manuscript) show how one performance responds to another. Keep thread and "
-        "parent-comment links so sequences can be reviewed in order.\n"
-        "- **Coding examples (Web Appendix B, Table WB1).** Record which excerpt supports each orientation and "
-        "activity, so each classification can be traced to the coding structure.\n"
-        "- **Future-oriented language.** The manuscript narrowed the social media data with future-oriented "
-        "keywords. Flag comments that describe what consumers already do without future-oriented wording, "
-        "because these may be underrepresented.\n"
-        "- **Consultation question.** Each consultation response should carry the question or proposal it "
-        "answers, as described in the manuscript's data collection section.\n"
-        "- **Monitoring over time.** The roadmaps in Figures 3 and 4 call for measuring progress and revising "
-        "the intervention (steps 6 and 7 for policymakers). A dated log of results supports that step; a single "
-        "run cannot show change."
+        "- **Narrative, temporality, and condition of adoption for each comment.** Table 2 defines these for each "
+        "orientation. The tool already returns them; adding them to the results table allows checking against Table 2.\n"
+        "- **The prescribed future used as reference.** Record the exact statement used, such as the 2023 National "
+        "Electric Vehicle Strategy and its 35% reduction target by 2030, described in the research context.\n"
+        "- **Full conversation sequences.** Figure 2 and the vignettes in Web Appendix D (Figures WD1 to WD3) show how "
+        "one performance responds to another. Keep thread and parent-comment links so sequences can be reviewed in order.\n"
+        "- **Coding examples (Web Appendix B, Table WB1).** Record which excerpt supports each orientation and activity, "
+        "so each classification can be traced to the coding structure.\n"
+        "- **Enacted future-making without future language.** The manuscript narrowed the social media data with "
+        "future-oriented keywords. Flag comments that describe present practice without future wording, because they may be under-represented.\n"
+        "- **Consultation question.** Each consultation response should carry the question or proposal it answers, as described in the data collection section.\n"
+        "- **Monitoring over time.** Steps 6 and 7 of the policymaking roadmap call for measuring progress and revising the intervention. "
+        "A dated log of results supports those steps; a single run cannot show change."
     )
 
 
@@ -586,8 +712,7 @@ def _show_dashboard(stored: dict, pseudo: bool):
 
     st.success(f"Analysis complete: {len(valid)} of {len(results)} comments classified.")
     if errors:
-        st.warning(f"{errors} comment(s) with errors. They are not counted in the results. "
-                   "See the Error column in the table.")
+        st.warning(f"{errors} comment(s) with errors. They are not counted in the results. See the Error column in the table.")
     if stored.get("omitted"):
         st.warning(f"{stored['omitted']} comments were omitted because of the {MAX_COMMENTS}-comment limit.")
     if not valid:
@@ -620,10 +745,21 @@ def _show_dashboard(stored: dict, pseudo: bool):
             })
         st.dataframe(pd.DataFrame(rows), hide_index=True)
 
-    if stored.get("reference"):
-        _render_reference_comparison(valid, stored["reference"])
+    _render_analysis(valid, results, pseudo, stored.get("reference"))
 
-    _render_analysis(valid)
+    with st.expander("How this follows the manuscript's method"):
+        st.markdown(
+            "- **Sources.** Consumer texts (interviews, social media, forums, public consultations) are classified. "
+            "Institutional and media texts are used to define the prescribed future, not classified (Table 1).\n"
+            "- **Dominant activity.** Each comment is classified by its dominant activity: evaluation, negotiation, or "
+            "enactment. A comment is negotiation when its overall function is to advocate, question, reject, or contest a "
+            "collective trajectory.\n"
+            "- **Orientations.** Orientations are assigned from the full configuration of narrative, goal, emotion, "
+            "temporality, and practice, not from sentiment or keywords alone (Section C of the prompt).\n"
+            "- **Challenges.** The three future-making challenges arise across linked comments and are not assigned to a single comment. "
+            "Fragile futures are a theoretical condition and are not scored by this tool.\n"
+            "- **Limits.** The tool is a demonstration. Its results need interpretation with the full comments and context."
+        )
 
     st.markdown("### Results table")
     rows = []
@@ -635,6 +771,8 @@ def _show_dashboard(stored: dict, pseudo: bool):
             "Orientation": _clean_enum(r.get("main_orientation", "")),
             "Activity": _clean_enum(r.get("main_activity", "")),
             "Subtype": _clean_enum(r.get("activity_subtype", "")),
+            "Activity rationale": r.get("activity_rationale", ""),
+            "Orientation rationale": r.get("orientation_rationale", ""),
             "Narrative": r.get("narrative_identified", ""),
             "Temporality": r.get("temporality_identified", ""),
             "Condition of adoption": r.get("notable_conditions_of_adoption", ""),
@@ -659,14 +797,24 @@ def tab_multiple():
 
     st.session_state.setdefault("pf_multi", PF_EV)
     pf = st.text_area("Prescribed future", height=100, key="pf_multi")
+
+    source_type = st.radio("Type of text", [SRC_CONSUMER, SRC_INSTITUTIONAL], key="source_type_multi")
+    if source_type == SRC_INSTITUTIONAL:
+        st.info(
+            "Institutional and media texts are not classified as consumer orientations. The manuscript uses them "
+            "to define the prescribed future and its framing. Paste them into the 'Prescribed future' box, or analyze "
+            "consumer comments that respond to them."
+        )
+        return
+
     source = st.radio("Source of the comments", SOURCE_OPTIONS, key="source_multi")
     example = CONVERSATION_BY_LABEL.get(source)
 
     uploaded, text = None, ""
     if example:
         st.markdown(
-            "**Context type:** Parent comment. Each user is read with the previous user's comment "
-            "as context; User 1 has no context."
+            "**Context type:** Parent comment. Each user is read with the previous user's comment as context; "
+            "User 1 has no context."
         )
         with st.expander("Show the conversation", expanded=True):
             for block in example["text"].split("\n\n"):
