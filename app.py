@@ -525,10 +525,10 @@ def _render_reference_comparison(valid: list, reference: dict):
                 _clean_enum(r.get("main_orientation", "")).upper())
         exp = (ref["activity"], ref["subtype"], ref["orientation"])
         rows.append({
-            "Participant": r["_comment_id"],
-            "Reference": f"{exp[2].title()} · {exp[0].title()} / {exp[1].title()}",
-            "Model": f"{pred[2].title()} · {pred[0].title()} / {pred[1].title()}",
-            "Match": "Yes" if pred == exp else "No",
+            "Replying participant": _author_label(r, pseudo) or r["_comment_id"],
+            "Responds to": _author_label(parent, pseudo) or parent["_comment_id"],
+            "Previous comment": _label3(parent),
+            "Reply": _label3(r),
         })
     if rows:
         st.markdown("**Comparison with the reference classification**")
