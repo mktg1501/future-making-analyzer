@@ -73,6 +73,12 @@ ROADMAP_STATUS = {
     "input": "Defined by you",
 }
 
+FRAGILITY_NOTE = (
+    "These are observable indicators, not a measure of fragility. Fragile futures are a theoretical "
+    "condition in the manuscript (Reviewer 2, point 4). Each indicator describes this set of comments "
+    "only and needs interpretation with the full comments."
+)
+
 # ─────────────────────────────────────────
 # EXAMPLES
 # ─────────────────────────────────────────
@@ -232,7 +238,8 @@ def show_result(r: dict, reference: dict = None):
             g = MANAGER_ORIENTATION_GUIDANCE[ori]
             st.write(g["implications"])
             st.markdown(f"**Objective:** {g['objective']}")
-            st.markdown(f"**Actions to avoid:** {g['avoid']}")
+            if g.get("avoid"):
+                st.markdown(f"**Actions to avoid:** {g['avoid']}")
 
     st.caption(INTERPRETIVE_USE_NOTE)
 
@@ -660,6 +667,40 @@ def _roadmap_integration(valid: list, results: list, pseudo: bool):
     )
 
 
+def _fragility_indicators(valid: list, results: list):
+    st.markdown("#### Fragile futures: observable indicators")
+    st.write(FRAGILITY_NOTE)
+
+    coex = orientation_coexistence(valid)
+    candidates = compute_challenge_review_candidates(results)
+    enact = [r for r in valid if _clean_enum(r.get("main_activity", "")).upper() == "ENACTMENT"]
+    enact_subs = {_clean_enum(r.get("activity_subtype", "")).upper() for r in enact} - {""}
+    accelerate = sum(1 for r in enact if _clean_enum(r.get("activity_subtype", "")).upper() == "ACCELERATE")
+
+    rows = [
+        {"Indicator": "Orientations present (of 4)",
+         "Observed in this set": f"{coex['n_present']} of 4",
+         "Paper's concept": "Multiple preferred futures"},
+        {"Indicator": "Linked pairs flagged: confrontational negotiation",
+         "Observed in this set": f"{len(candidates['CONFRONTATIONAL_NEGOTIATIONS'])} pair(s) for review",
+         "Paper's concept": "Confrontational negotiations"},
+        {"Indicator": "Linked pairs flagged: convoluted evaluation",
+         "Observed in this set": f"{len(candidates['CONVOLUTED_EVALUATIONS'])} pair(s) for review",
+         "Paper's concept": "Convoluted evaluations"},
+        {"Indicator": "Enactment subtypes present (of 4)",
+         "Observed in this set": f"{len(enact_subs)} of 4" if enact else "No enactment comments",
+         "Paper's concept": "Competing enactments"},
+        {"Indicator": "Enactment comments that accelerate the prescribed future",
+         "Observed in this set": f"{accelerate} of {len(enact)}" if enact else "No enactment comments",
+         "Paper's concept": "Acceleration of the prescribed future"},
+        {"Indicator": "Volatility over time",
+         "Observed in this set": "Not observable from one run",
+         "Paper's concept": "Volatility"},
+    ]
+    st.dataframe(pd.DataFrame(rows), hide_index=True)
+    st.caption("Keep these indicators separate. Do not add them into a single index.")
+
+
 def _render_analysis(valid: list, results: list, pseudo: bool, reference):
     coex = orientation_coexistence(valid)
     present = coex["present"]
@@ -696,6 +737,8 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference):
                                   columns=["Activity", "Comments"]), hide_index=True)
 
     _roadmap_integration(valid, results, pseudo)
+
+    _fragility_indicators(valid, results)
 
     _sampling_check(valid)
 
@@ -737,7 +780,8 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference):
             st.write(g["implications"])
             _render_adapted_block(valid, o)
             st.markdown(f"**Objective:** {g['objective']}")
-            st.markdown(f"**Actions to avoid:** {g['avoid']}")
+            if g.get("avoid"):
+                st.markdown(f"**Actions to avoid:** {g['avoid']}")
     st.markdown("**Messaging (managerial roadmap, step 5)**")
     st.write(MANAGER_MESSAGING_NOTE)
 
