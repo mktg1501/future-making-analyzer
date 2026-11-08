@@ -730,18 +730,20 @@ MANAGER_ORIENTATION_GUIDANCE = {
     "CATALYZER": {
         "lens": POLICY_ORIENTATION_GUIDANCE["CATALYZER"]["lens"],
         "implications": (
-            "Catalyzers simplify their evaluation and accelerate enactment. They can normalize the change through "
-            "word-of-mouth or testimonials, but messages should not mobilize them at the cost of alienating other orientations."
+            "Consumers with a catalyzer orientation simplify their evaluation and accelerate enactment. "
+            "They can normalize the change through word-of-mouth or testimonials, but messages should not "
+            "mobilize them at the cost of alienating consumers with other orientations."
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["CATALYZER"]["monitor"],
         "objective": "Use their experience to normalize the change and bring other consumers along.",
-        "avoid": None,  # Web Appendix Table WE2 not yet provided; the interface hides this line when empty.
+        "avoid": None,  # Web Appendix Table WE2 is handled in app.py; the interface hides this line when empty.
     },
     "AMBIVALENT": {
         "lens": POLICY_ORIENTATION_GUIDANCE["AMBIVALENT"]["lens"],
         "implications": (
-            "Ambivalent consumers stall their evaluation and delay enactment. Their named conditions can be addressed "
-            "at specific touchpoints, and the manuscript notes that avoiding rushed decisions reduces the risk of unstable adoption."
+            "Consumers with an ambivalent orientation stall their evaluation and delay enactment. Their named "
+            "conditions can be addressed at specific touchpoints. The manuscript notes that avoiding rushed "
+            "decisions reduces the risk of unstable adoption."
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["AMBIVALENT"]["monitor"],
         "objective": "Address the specific conditions these consumers name, and avoid rushing their decisions.",
@@ -750,8 +752,9 @@ MANAGER_ORIENTATION_GUIDANCE = {
     "RESISTANT": {
         "lens": POLICY_ORIENTATION_GUIDANCE["RESISTANT"]["lens"],
         "implications": (
-            "Resistant consumers avoid evaluation, reject the prescribed future, and seek to prevent enactment. Their "
-            "reasons for pushback are useful information for the support design, and messages should not alienate them."
+            "Consumers with a resistant orientation avoid evaluation, reject the prescribed future, and seek to "
+            "prevent its enactment. Their reasons for pushback are useful information for designing support, "
+            "and messages should not alienate them."
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["RESISTANT"]["monitor"],
         "objective": "Understand the reasons for pushback and make sure messaging does not alienate these consumers.",
@@ -760,8 +763,9 @@ MANAGER_ORIENTATION_GUIDANCE = {
     "EXPANDER": {
         "lens": POLICY_ORIENTATION_GUIDANCE["EXPANDER"]["lens"],
         "implications": (
-            "Expanders complexify their evaluation, contest the prescribed future, and reroute practice toward broader "
-            "alternatives. They reveal broader value propositions and complementary pathways."
+            "Consumers with an expander orientation complexify their evaluation, contest the prescribed future, "
+            "and reroute practice toward broader alternatives. They reveal broader value propositions and "
+            "complementary pathways."
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["EXPANDER"]["monitor"],
         "objective": "Consider the systemic issues these consumers raise and identify complementary or alternative pathways.",
