@@ -218,6 +218,11 @@ Question, Reject, or Contest. If a comment ONLY assesses the prescribed
 future without performing one of these functions, classify it as
 Evaluation.
 
+Reporting another actor's position (for example, a company slowing the transition) does NOT by
+itself establish Negotiation. Negotiation requires that the comment argues for, against, or about
+a collective trajectory. If the comment mainly reports the consumer's own practice change and
+mentions another actor only as background, classify it as Enactment.
+
 Sub-types (organized by orientation):
   ADVOCATE  (Catalyzer)  -- recruiting others; presenting the transition
     as a collective endeavor; calling for stronger policy signals;
@@ -414,6 +419,13 @@ Example (RESISTANT, Enactment/Prevent) -- news media comment (StarT):
 "I for one WILL NOT be forced into an elec vehicle and spend half my
 travel time charging the damn thing to go to hell."
 -> ENACTMENT / PREVENT / RESISTANT.
+
+Example (CATALYZER, Enactment/Accelerate) -- Facebook group (Johnny):
+"Toyota is still very much trying to slow down the transition to EVs. We have ordered two Teslas
+that will be delivered hopefully this year. We are selling our Prado and it looks like we are
+going to sell our last Toyota car."
+-> ENACTMENT / ACCELERATE / CATALYZER. The sentence about Toyota is background. The comment's
+function is to report present decisions that materialize the prescribed future.
 
 Example (EXPANDER, Enactment/Reroute) -- public consultation (Phillip):
 "I uprooted my life and moved from the Sunshine Coast to Melbourne with
