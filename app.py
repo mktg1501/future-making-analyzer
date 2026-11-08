@@ -19,16 +19,18 @@ st.set_page_config(
 )
 
 from motor import (
-    CONTEXT_TYPE_CHOICES, DEMO_BY_ID, DEMO_CONVERSATION_REFERENCE,
-    HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE, LABELED_THREAD, MANAGER_ORIENTATION_GUIDANCE,
-    MANAGER_ROADMAP_STEPS, MAX_COMMENTS, ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL,
-    PF_EV, POLICY_ORIENTATION_GUIDANCE, POLICY_ROADMAP_STEPS, analyze_comment, analyze_document,
-    build_comment_records_from_consultation, build_comment_records_from_csv,
-    build_comment_records_from_paragraphs, build_comment_records_from_user_labels,
-    compute_challenge_review_candidates, compute_dominant_distributions,
-    ensure_unique_ids, has_comment_text_column, orientation_coexistence,
-    orientations_by_thread, prepare_records, pseudonymize, select_within_limit,
-    _clean_enum,
+    ASSUMED_THREAD, CHALLENGE_DEFINITIONS, CONTEXT_TYPE_CHOICES, DEMO_BY_ID,
+    DEMO_CONVERSATION, DEMO_CONVERSATION_REFERENCE, HOMEPAGE_DESCRIPTION,
+    INTERPRETIVE_USE_NOTE, LABELED_THREAD, LINK_ASSUMED, LINK_CONFIRMED, LINK_LABELED,
+    LINK_NONE, MANAGER_ORIENTATION_GUIDANCE, MANAGER_ROADMAP_STEPS, MAX_COMMENTS,
+    ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV,
+    POLICY_ORIENTATION_GUIDANCE, POLICY_ROADMAP_STEPS, analyze_comment, analyze_document,
+    apply_assumed_adjacency, build_comment_records_from_consultation,
+    build_comment_records_from_csv, build_comment_records_from_paragraphs,
+    build_comment_records_from_user_labels, compute_challenge_review_candidates,
+    compute_dominant_distributions, ensure_unique_ids, has_comment_text_column,
+    orientation_coexistence, orientations_by_thread, prepare_records, pseudonymize,
+    select_within_limit, _clean_enum,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -40,28 +42,25 @@ CTX_DESC = {code: desc for _, code, desc in CONTEXT_TYPE_CHOICES}
 
 ORI_LABEL = {o: o.title() for o in ORIENTATION_ORDER}
 
-# Wording rule: orientations are described as "consumers with a ... orientation",
-# never as "Resistant consumers" or "Catalyzers". Applied to all guidance text shown.
-ORIENTATION_PHRASES = [
-    (r"\bResistant consumers\b", "Consumers with a resistant orientation"),
-    (r"\bresistant consumers\b", "consumers with a resistant orientation"),
-    (r"\bCatalyzers\b", "Consumers with a catalyzer orientation"),
-    (r"\bCatalyzer consumers\b", "Consumers with a catalyzer orientation"),
-    (r"\bcatalyzer consumers\b", "consumers with a catalyzer orientation"),
-    (r"\bAmbivalent consumers\b", "Consumers with an ambivalent orientation"),
-    (r"\bambivalent consumers\b", "consumers with an ambivalent orientation"),
-    (r"\bExpanders\b", "Consumers with an expander orientation"),
-    (r"\bExpander consumers\b", "Consumers with an expander orientation"),
-    (r"\bexpander consumers\b", "consumers with an expander orientation"),
-    (r"\bResistant\b", "resistant"),
-]
+# ─────────────────────────────────────────
+# WORDING
+# Orientations are always described as "consumers with a ... orientation".
+# Applied to all guidance and model text before display.
+# ─────────────────────────────────────────
+_ORIENTATION_PATTERN = re.compile(
+    r"\b(resistant|catalyzer|ambivalent|expander)(?:s|\s+consumers?)\b", re.IGNORECASE
+)
+_ARTICLE = {"ambivalent": "an", "expander": "an"}
 
 
-def _neutral(text: str) -> str:
-    out = str(text)
-    for pattern, replacement in ORIENTATION_PHRASES:
-        out = re.sub(pattern, replacement, out)
-    return out
+def _neutral(text) -> str:
+    def repl(m):
+        word = m.group(1).lower()
+        phrase = f"consumers with {_ARTICLE.get(word, 'a')} {word} orientation"
+        if m.group(0)[0].isupper():
+            phrase = phrase[0].upper() + phrase[1:]
+        return phrase
+    return _ORIENTATION_PATTERN.sub(repl, str(text))
 
 
 EXAMPLE_NOTE = (
@@ -88,17 +87,37 @@ ROADMAP_STATUS = {
     "input": "Defined by you",
 }
 
-FRAGILITY_NOTE = (
-    "These are observable indicators, not a measure of fragility. Fragile futures are a theoretical "
-    "condition in the manuscript (Reviewer 2, point 4). Each indicator describes this set of comments "
-    "only and needs interpretation with the full comments."
-)
+FRAGILITY_NOTE = "These are observable indicators, not a measure of fragility."
 
 TABLE_WE_SOURCE = (
     "Source: manuscript Web Appendix Tables WE1 (policymaking) and WE2 (managerial), which apply the "
     "framework to AI-integrated healthcare. The actions are the authors'; the wording is adapted here "
     "from patients to consumers, and the healthcare examples are not shown."
 )
+
+PAIR_NOTE = (
+    "Each pair is linked, shares an activity, and differs in orientation or subtype. A pair is a lead "
+    "for review, not evidence that a challenge occurred. Links are shown with their basis: confirmed "
+    "in the data, given by the order of User N labels, or assumed by the tool. Pairs with assumed links "
+    "are hidden unless you include them."
+)
+
+DECISION_OPTIONS = ["Not reviewed", "Shows the challenge", "Does not show it", "Unsure"]
+
+LINK_BASIS_LABEL = {
+    LINK_CONFIRMED: "Confirmed in the data",
+    LINK_LABELED: "Order given by the User N labels (not verified as replies)",
+    LINK_ASSUMED: "Assumed by the tool",
+    LINK_NONE: "No link",
+}
+
+THREAD_LABEL = {
+    LABELED_THREAD: "Pasted conversation (User N labels)",
+    ASSUMED_THREAD: "Pasted text with assumed links",
+}
+
+LINK_CHOICE_DATA = "Use only the links in the data"
+LINK_CHOICE_ASSUMED = "Assume each comment replies to the one above it"
 
 # ─────────────────────────────────────────
 # GUIDANCE FROM TABLES WE1 AND WE2 (adapted to consumers)
@@ -206,27 +225,11 @@ CONV2_REFERENCE = {
 CONVERSATION_EXAMPLES = {
     "conv1": {
         "label": "Example 1: forum exchange on the adoption curve (4 users)",
-        "text": (
-            "User 1: EVs will be on an exponential adoption curve. Everyone will want one... Nobody will want an "
-            "expensive 2nd hand ICE... Globally, governments are going to start making fossil fuels very expensive. "
-            "T-A-X-E-S will be levied on this foul, polluting rubbish we are all burning today... Or are you advocating "
-            "that we go back to bicycles and horses, or maybe just buses?\n\n"
-            "User 2: Better tell that to the Prius owners replacing their batteries. My car is now 13 years old... "
-            "Batteries wear over time... so what magic bullet have you discovered that defies physics...? Once someone "
-            "like me can get a used EV for <$10k, and have the battery replaced cheaply, then I'll agree with you... "
-            "I'm not anti EV, I'm just realistic about costs and time frames.\n\n"
-            "User 3: Nope, I'm not confused, thanks for the concern though... If he bought an ICE car now, he will get "
-            "6-10 years use out of it and sell it for scrap value and registration. Not even close to the financial ruin "
-            "you are trying to peddle... Technology adoption curves typically look like bell curves... not what you are "
-            "suggesting... This is delusional.\n\n"
-            "User 4: I fully get what you're saying, it's not rocket science, but that's not what I'm on about... I simply "
-            "object to being told I'm an idiot... I'd like to see passenger cars filled with passengers, less cars on the "
-            "road, less money spent on new roads!... Where people may simply drive less."
-        ),
+        "text": DEMO_CONVERSATION,
         "reference": DEMO_CONVERSATION_REFERENCE,
         "source_note": (
             "Forum exchange quoted in the manuscript. Reference labels are those the manuscript "
-            "assigns to each user."
+            "assigns to each user. The order follows the User N labels."
         ),
     },
     "conv2": {
@@ -278,9 +281,8 @@ def show_result(r: dict, reference: dict = None):
     ori = _clean_enum(r.get("main_orientation", "")).upper()
     act = _clean_enum(r.get("main_activity", "")).upper()
     sub = _clean_enum(r.get("activity_subtype", "")).upper()
-    meta = ORIENTATIONS.get(ori, {})
-    color = html.escape(meta.get("color", "#333333"))
-    bg = html.escape(meta.get("bg", "#FFFFFF"))
+    color = html.escape(ORIENTATIONS.get(ori, {}).get("color", "#333333"))
+    bg = html.escape(ORIENTATIONS.get(ori, {}).get("bg", "#FFFFFF"))
 
     st.markdown(
         f"<div style='background:{bg};border-left:6px solid {color};"
@@ -319,7 +321,7 @@ def show_result(r: dict, reference: dict = None):
             if isinstance(s, dict):
                 st.markdown(
                     f"- {s.get('activity', '')} / {s.get('activity_subtype', '')} "
-                    f"({s.get('orientation', '')}): {s.get('rationale', '')}"
+                    f"({s.get('orientation', '')}): {_neutral(s.get('rationale', ''))}"
                 )
 
     if r.get("context_note"):
@@ -555,6 +557,18 @@ def _label3(r: dict) -> str:
             f"{_clean_enum(r.get('activity_subtype', '')).title()}")
 
 
+def _link_basis(source: str) -> str:
+    return LINK_BASIS_LABEL.get(source or LINK_NONE, LINK_BASIS_LABEL[LINK_NONE])
+
+
+def _pair_id(pair: dict) -> str:
+    return f"{pair['parent']['_comment_id']}->{pair['reply']['_comment_id']}"
+
+
+def _one_line(text: str) -> str:
+    return str(text).replace("\n", " ")
+
+
 def _render_pie(coex: dict):
     values = [{
         "orientation": ORI_LABEL[o],
@@ -599,7 +613,7 @@ def _coexistence_sentence(coex: dict) -> str:
 def _adapted(valid: list, ori: str) -> dict:
     """Summarizes what the model found for one orientation in THIS dataset."""
     rows = [r for r in valid if _clean_enum(r.get("main_orientation", "")).upper() == ori]
-    narratives = Counter(str(r.get("narrative_identified", "")).strip()
+    narratives = Counter(_neutral(str(r.get("narrative_identified", "")).strip())
                          for r in rows if str(r.get("narrative_identified", "")).strip())
     conditions = [str(r.get("notable_conditions_of_adoption", "")).strip() for r in rows
                   if str(r.get("notable_conditions_of_adoption", "")).strip()]
@@ -663,6 +677,7 @@ def _adjacency_rows(valid: list, pseudo: bool) -> list:
             "Responds to": _author_label(parent, pseudo) or parent["_comment_id"],
             "Previous comment": _label3(parent),
             "Reply": _label3(r),
+            "Link basis": _link_basis(r.get("_link_source")),
         })
     return rows
 
@@ -693,7 +708,7 @@ ROADMAP_STATUS_NOTE = (
 )
 
 
-def _roadmap_integration(valid: list, results: list, pf_text: str):
+def _roadmap_integration(valid: list, results: list, pf_text: str, include_assumed: bool):
     st.markdown("#### Roadmap integration")
     st.write(ROADMAP_STATUS_NOTE)
     choice = st.radio(
@@ -705,7 +720,7 @@ def _roadmap_integration(valid: list, results: list, pf_text: str):
     we_actions = WE_POLICY_STEP_ACTIONS if is_policy else WE_MANAGER_STEP_ACTIONS
 
     coex = orientation_coexistence(valid)
-    candidates = compute_challenge_review_candidates(results)
+    candidates = compute_challenge_review_candidates(results, include_assumed=include_assumed)
     n_conv = len(candidates["CONVOLUTED_EVALUATIONS"])
     n_conf = len(candidates["CONFRONTATIONAL_NEGOTIATIONS"])
     n_comp = len(candidates["COMPETING_ENACTMENTS"])
@@ -756,12 +771,12 @@ def _roadmap_integration(valid: list, results: list, pf_text: str):
     )
 
 
-def _fragility_indicators(valid: list, results: list):
+def _fragility_indicators(valid: list, results: list, include_assumed: bool):
     st.markdown("#### Fragile futures: observable indicators")
     st.write(FRAGILITY_NOTE)
 
     coex = orientation_coexistence(valid)
-    candidates = compute_challenge_review_candidates(results)
+    candidates = compute_challenge_review_candidates(results, include_assumed=include_assumed)
     enact = [r for r in valid if _clean_enum(r.get("main_activity", "")).upper() == "ENACTMENT"]
     enact_subs = {_clean_enum(r.get("activity_subtype", "")).upper() for r in enact} - {""}
     accelerate = sum(1 for r in enact if _clean_enum(r.get("activity_subtype", "")).upper() == "ACCELERATE")
@@ -790,7 +805,7 @@ def _fragility_indicators(valid: list, results: list):
     st.caption("Keep these indicators separate. Do not add them into a single index.")
 
 
-def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_text: str):
+def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_text: str, include_assumed: bool):
     coex = orientation_coexistence(valid)
     present = coex["present"]
     dist = compute_dominant_distributions(valid)
@@ -825,16 +840,16 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_tex
         st.dataframe(pd.DataFrame(list(dist["activity_counts"].items()),
                                   columns=["Activity", "Comments"]), hide_index=True)
 
-    _roadmap_integration(valid, results, pf_text)
+    _roadmap_integration(valid, results, pf_text, include_assumed)
 
-    _fragility_indicators(valid, results)
+    _fragility_indicators(valid, results, include_assumed)
 
     adjacency = _adjacency_rows(valid, pseudo)
     if adjacency:
         st.markdown("**Replies compared with the comment they answer**")
         st.write(
             "This table is descriptive. It shows which orientation and activity each reply has, next to the "
-            "comment it responds to. It does not show that one performance caused the other."
+            "comment it responds to, and the basis of each link. It does not show that one performance caused the other."
         )
         st.dataframe(pd.DataFrame(adjacency), hide_index=True)
 
@@ -879,7 +894,53 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_tex
             st.markdown(f"**Objective:** {_neutral(pg['objective'])}")
 
 
-def _show_dashboard(stored: dict, pseudo: bool):
+def _linked_pairs_section(results: list, pseudo: bool, include_assumed: bool):
+    st.markdown("### Linked pairs for human review")
+    st.caption(PAIR_NOTE)
+    candidates = compute_challenge_review_candidates(results, include_assumed=include_assumed)
+    if not any(candidates.values()):
+        st.info("No linked pairs to review under the current link setting.")
+        return
+
+    for key, meta in CHALLENGE_DEFINITIONS.items():
+        pairs = candidates.get(key, [])
+        if not pairs:
+            continue
+        st.markdown(f"**{meta['label']}: {len(pairs)} pair(s)**")
+        st.caption(meta["definition"])
+        for pair in pairs:
+            p, rp = pair["parent"], pair["reply"]
+            st.markdown(
+                f"**{_author_label(p, pseudo) or p['_comment_id']} ({_label3(p)}) → "
+                f"{_author_label(rp, pseudo) or rp['_comment_id']} ({_label3(rp)})**"
+            )
+            st.markdown("> " + _one_line(p["_comment_text"]))
+            st.markdown("> " + _one_line(rp["_comment_text"]))
+            st.caption("Link basis: " + _link_basis(pair.get("link_source")))
+            st.selectbox("Researcher decision", DECISION_OPTIONS, key=f"decision_{_pair_id(pair)}")
+            st.divider()
+
+    decision_rows = []
+    for key, meta in CHALLENGE_DEFINITIONS.items():
+        for pair in candidates.get(key, []):
+            pid = _pair_id(pair)
+            decision_rows.append({
+                "Pair": pid,
+                "Challenge (for review)": meta["label"],
+                "Link basis": _link_basis(pair.get("link_source")),
+                "Researcher decision": st.session_state.get(f"decision_{pid}", "Not reviewed"),
+            })
+    if decision_rows:
+        df = pd.DataFrame(decision_rows)
+        st.download_button(
+            "Download review decisions (CSV)",
+            data=df.to_csv(index=False).encode("utf-8-sig"),
+            file_name="review_decisions.csv",
+            mime="text/csv",
+        )
+
+
+def _show_dashboard(stored: dict, pseudo: bool, include_assumed: bool):
     results = stored["results"]
     valid = [r for r in results if "_error" not in r]
     errors = len(results) - len(valid)
@@ -915,13 +976,15 @@ def _show_dashboard(stored: dict, pseudo: bool):
         for tid, info in by_thread.items():
             present = [o for o in ORIENTATION_ORDER if info["counts"][o]]
             rows.append({
-                "Conversation": "Pasted conversation" if tid == LABELED_THREAD else str(tid),
+                "Conversation": THREAD_LABEL.get(tid, str(tid)),
                 "Comments": info["n"],
                 "Orientations present": f"{len(present)} of 4: " + ", ".join(ORI_LABEL[o] for o in present),
             })
         st.dataframe(pd.DataFrame(rows), hide_index=True)
 
-    _render_analysis(valid, results, pseudo, stored.get("reference"), pf_text)
+    _render_analysis(valid, results, pseudo, stored.get("reference"), pf_text, include_assumed)
+
+    _linked_pairs_section(results, pseudo, include_assumed)
 
     with st.expander("How this follows the manuscript's method"):
         st.markdown(
@@ -932,6 +995,8 @@ def _show_dashboard(stored: dict, pseudo: bool):
             "collective trajectory.\n"
             "- **Orientations.** Orientations are assigned from the full configuration of narrative, goal, emotion, "
             "temporality, and practice, not from sentiment or keywords alone (Section C of the prompt).\n"
+            "- **Links.** Each link states its basis. Links assumed by the tool are excluded from challenge review "
+            "unless the user includes them.\n"
             "- **Challenges.** The three future-making challenges arise across linked comments and are not assigned to a single comment. "
             "Fragile futures are a theoretical condition and are not scored by this tool.\n"
             "- **Limits.** The tool is a demonstration. Its results need interpretation with the full comments and context."
@@ -947,6 +1012,7 @@ def _show_dashboard(stored: dict, pseudo: bool):
             "Orientation": _clean_enum(r.get("main_orientation", "")),
             "Activity": _clean_enum(r.get("main_activity", "")),
             "Subtype": _clean_enum(r.get("activity_subtype", "")),
+            "Link basis": _link_basis(r.get("_link_source")),
             "Activity rationale": r.get("activity_rationale", ""),
             "Orientation rationale": r.get("orientation_rationale", ""),
             "Narrative": r.get("narrative_identified", ""),
@@ -1013,6 +1079,19 @@ def tab_multiple():
         consent = st.checkbox(PII_CONSENT_LABEL, key="pii_multi")
     pseudo = st.checkbox("Pseudonymize authors in the table and download", value=True, key="pseudo_multi")
 
+    link_mode = "data"
+    if not example:
+        link_choice = st.radio(
+            "How should comments be linked?",
+            [LINK_CHOICE_DATA, LINK_CHOICE_ASSUMED],
+            key="link_mode_multi",
+            help="Use the data's own reply links when they exist. The assumed option treats each "
+                 "comment as a reply to the one above it, and labels every such link as assumed.",
+        )
+        link_mode = "assumed" if link_choice == LINK_CHOICE_ASSUMED else "data"
+
+    include_assumed = False
+
     if not pf.strip():
         st.warning("Enter the prescribed future before analyzing.")
         return
@@ -1031,6 +1110,17 @@ def tab_multiple():
     if renamed:
         st.warning(f"{renamed} repeated identifier(s) were renamed so no comment is lost.")
 
+    if link_mode == "assumed":
+        records = apply_assumed_adjacency(records)
+        st.warning(
+            "Assumed links are not evidence of interaction. Each link created here is labeled as assumed "
+            "in the results."
+        )
+        include_assumed = st.checkbox(
+            "Include pairs with assumed links in the review section",
+            value=False, key="include_assumed",
+        )
+
     selected, omitted = select_within_limit(records, MAX_COMMENTS)
     prepare_records(selected, consult_q.strip() if is_consult else "", is_consult)
 
@@ -1043,6 +1133,7 @@ def tab_multiple():
         st.dataframe(pd.DataFrame([{
             "ID": r["comment_id"],
             "Author": pseudonymize(r.get("author", "")) if pseudo else r.get("author", ""),
+            "Link basis": _link_basis(r.get("link_source")),
             "Comment": r["comment_text"],
         } for r in selected]), hide_index=True)
 
@@ -1074,7 +1165,7 @@ def tab_multiple():
     if stored["signature"] != signature:
         st.info("The input changed since the last analysis. Analyze again to update the results.")
         return
-    _show_dashboard(stored, pseudo)
+    _show_dashboard(stored, pseudo, include_assumed)
 
 
 # ─────────────────────────────────────────
