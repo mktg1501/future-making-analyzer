@@ -1,12 +1,12 @@
 """
-Consumer Future-Making Analyzer - motor de análisis.
+Consumer Future-Making Analyzer: analysis engine.
 
-Contiene la clasificación, la construcción del contexto, la lectura de datos
-y la agregación. La interfaz (app.py) solo importa desde este módulo.
+Holds classification, context building, data reading, and aggregation.
+The interface (app.py) imports everything from this module.
 
-Uso desde la terminal:
-    python motor.py                 -> pruebas estructurales (sin API)
-    python motor.py --consistencia  -> chequeo de consistencia (usa la API)
+Terminal usage:
+    python motor.py                 -> structural tests (no API calls)
+    python motor.py --consistencia  -> internal consistency check (uses the API)
 """
 import concurrent.futures
 import hashlib
@@ -26,10 +26,10 @@ from shared_resources import get_openai_client, openai_semaphore
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────
-# CONFIGURACIÓN
+# CONFIGURATION
 # ─────────────────────────────────────────
 PAPER_TITLE = "Futures in the Making: How Consumers Respond to Future-Oriented Interventions"
-PAPER_URL = "REPLACE_WITH_YOUR_DOI_OR_URL"  # Reemplazar por el DOI o enlace real
+PAPER_URL = "REPLACE_WITH_YOUR_DOI_OR_URL"  # Replace with the real DOI or link
 
 MODEL_NAME = "gpt-4o-mini"
 DOC_MAX_WORKERS = 5
@@ -37,69 +37,67 @@ MAX_RETRIES = 3
 MAX_COMMENTS = int(os.environ.get("MAX_COMENTARIOS", "300"))
 EST_COST_PER_COMMENT = 0.00075
 MAX_SECONDARY = 2
-DEFAULT_THREAD = "_default_thread_"   # comentarios sin hilo conocido
-LABELED_THREAD = "_labeled_exchange_1"  # conversación con etiquetas "User N:"
+MAX_NOTE_CHARS = 300
+DEFAULT_THREAD = "_default_thread_"     # comments with no known thread
+LABELED_THREAD = "_labeled_exchange_1"  # conversation with "User N:" labels
 ORIENTATION_ORDER = ["CATALYZER", "AMBIVALENT", "RESISTANT", "EXPANDER"]
 
 EXAMPLE_DISCLAIMER = (
-    "Los ejemplos del paper también aparecen en las instrucciones del modelo. "
-    "Sirven para ilustrar cómo funciona la herramienta, no para medir su precisión."
+    "The paper's examples are also included in the model's instructions. "
+    "They illustrate how the tool works; they do not measure its accuracy."
 )
 
 # ─────────────────────────────────────────
-# NOTAS DE INTERPRETACIÓN
+# INTERPRETIVE NOTES
 # ─────────────────────────────────────────
 INTERPRETIVE_USE_NOTE = (
-    "Nota de uso: las actividades de futuro-making son interdependientes, entrelazadas "
-    "y recursivas, no secuenciales. Las orientaciones son formas diagnósticas y socialmente "
-    "patronadas de practicar el futuro-making, no tipos fijos de consumidor ni segmentos de "
-    "mercado. Esta aplicación es una herramienta interactiva de demostración, no un "
-    "instrumento diagnóstico validado. Revisa los resultados junto con el comentario completo, "
-    "el contexto disponible y la evidencia conductual pertinente."
+    "Interpretive-use note: future-making activities are interdependent, entangled, and recursive "
+    "rather than sequential. Future-making orientations are diagnostic, socially patterned ways of "
+    "performing future-making, not fixed consumer types or market segments. This application is an "
+    "interactive demonstration tool, not a validated diagnostic instrument. Review the results together "
+    "with the complete comment, any available context, and relevant behavioral evidence."
 )
 
 HOMEPAGE_DESCRIPTION = """
-Usa esta aplicación para apoyar el mapeo del futuro-making de consumidores frente a una
-intervención de política o de mercado, según el marco de **"Futures in the Making: How
-Consumers Respond to Future-Oriented Interventions."**
+Use this application to map consumer future-making in response to a policy or market intervention,
+as theorized in **"Futures in the Making: How Consumers Respond to Future-Oriented Interventions."**
 
-Puedes escribir o pegar comentarios, respuestas a consultas, publicaciones de foros o
-conversaciones en redes sociales. La aplicación clasifica cada **comentario focal** usando,
-como contexto interpretativo, el comentario padre, comentarios cercanos, la publicación
-original o la pregunta de la consulta.
+You can type or paste consumer comments, consultation responses, forum posts, or social media
+conversations. The application classifies each **focal comment**, using the parent comment, nearby
+comments, the original post, or the consultation question as interpretive context.
 
-**Alcance:**
+**Scope:**
 
-* El marco se desarrolló con investigación cualitativa sobre intervenciones de vehículos de
-  cero emisiones (ZEV) en Australia. Los autores esperan que se aplique a otros contextos.
-* El tipo de intervención (Fija, Acotada, Flexible o Abierta) depende de su alcance y de su
-  grado de prescripción, no de su dominio general.
-* Las orientaciones (Catalyzer, Ambivalent, Resistant y Expander) son formas diagnósticas,
-  **no** tipos fijos de consumidor ni segmentos.
-* Los documentos institucionales se usan para definir el futuro prescrito o el contexto de
-  una consulta. No se clasifican como orientaciones de consumidores.
-* Los desafíos del futuro-making (Evaluaciones Enredadas, Negociaciones Confrontacionales y
-  Actuaciones en Competencia) y los Futuros Frágiles son condiciones cualitativas que surgen
-  de patrones entre discursos, prácticas y actores vinculados. Nunca se infieren de un solo
-  comentario ni reciben una puntuación o probabilidad automática.
+* The framework was developed through qualitative research on Australian Zero Emission Vehicle (ZEV)
+  interventions. The authors expect it may apply to other future-oriented intervention contexts.
+* The intervention type (Fixed, Bounded, Flexible, or Open) depends on the scope and degree of
+  prescription of the intervention, not on its general domain.
+* The orientations (Catalyzer, Ambivalent, Resistant, and Expander) are diagnostic patterns,
+  **not** fixed consumer types or segments.
+* Institutional documents may define the prescribed future or provide consultation context. They are
+  not classified as consumer orientations.
+* The future-making challenges (Convoluted Evaluations, Confrontational Negotiations, and Competing
+  Enactments) and Fragile Futures are qualitative conditions that emerge from patterns across linked
+  discourse, practices, actors, and time. They are never inferred from a single comment and never
+  receive an automatic score or probability.
 """
 
 # ─────────────────────────────────────────
-# TIPOS DE CONTEXTO Y UTILIDADES
+# CONTEXT TYPES AND UTILITIES
 # ─────────────────────────────────────────
 VALID_CONTEXT_TYPES = {"PARENT_REPLY", "THREAD_WINDOW", "ORIGINAL_POST", "CONSULTATION_PROMPT", "NONE"}
 
 CONTEXT_TYPE_CHOICES = [
-    ("Sin contexto", "NONE",
-     "Usar cuando el comentario focal debe interpretarse por sí solo."),
-    ("Comentario padre", "PARENT_REPLY",
-     "El comentario específico al que responde directamente el comentario focal."),
-    ("Ventana de hilo", "THREAD_WINDOW",
-     "Un conjunto pequeño de comentarios cercanos de la misma conversación."),
-    ("Publicación original", "ORIGINAL_POST",
-     "La publicación, pie de foto, pregunta o tema que inició la conversación."),
-    ("Pregunta de consulta", "CONSULTATION_PROMPT",
-     "La pregunta oficial, propuesta o descripción de política a la que responde la consulta."),
+    ("No context", "NONE",
+     "Use when the focal comment should be interpreted on its own."),
+    ("Parent comment", "PARENT_REPLY",
+     "The specific comment that the focal comment directly replies to."),
+    ("Thread window", "THREAD_WINDOW",
+     "A small set of nearby comments from the same conversation."),
+    ("Original post", "ORIGINAL_POST",
+     "The post, article caption, question, or topic that started the conversation."),
+    ("Consultation question", "CONSULTATION_PROMPT",
+     "The official question, proposal, or policy description that a consultation response answers."),
 ]
 
 
@@ -114,7 +112,7 @@ def _clean_enum(value) -> str:
 
 
 # ─────────────────────────────────────────
-# PROMPT DEL SISTEMA (clasificación)
+# SYSTEM PROMPT (classification)
 # ─────────────────────────────────────────
 SYSTEM_PROMPT = """
 You are an analytical assistant supporting the mapping of consumer
@@ -483,50 +481,50 @@ OUTPUT FORMAT -- Return ONLY valid JSON
 """
 
 # ─────────────────────────────────────────
-# ORIENTACIONES Y ACTIVIDADES
+# ORIENTATIONS AND ACTIVITIES
 # ─────────────────────────────────────────
 ORIENTATIONS = {
     "CATALYZER": {
         "color": "#27AE60", "bg": "#EAFAF1",
-        "goal": "Accelerar el cambio hacia el futuro prescrito",
+        "goal": "Accelerate change toward the prescribed future",
         "narrative": "Urgency Narrative",
-        "temporality": "El futuro está cerca: el cambio ocurre ahora",
+        "temporality": "The future is close: change is happening now",
         "activities": "Simplify - Advocate - Accelerate",
     },
     "AMBIVALENT": {
         "color": "#D68910", "bg": "#FEFDE7",
-        "goal": "Frenar el ritmo del cambio, posponer decisiones, equilibrar riesgos y beneficios",
+        "goal": "Slow the pace of change, delay decisions, balance risks and benefits",
         "narrative": "Pragmatic Narrative",
-        "temporality": "El futuro es contingente: el cambio es incierto",
+        "temporality": "The future is contingent: change is uncertain",
         "activities": "Stall - Question - Delay",
     },
     "RESISTANT": {
         "color": "#C0392B", "bg": "#FDEDEC",
-        "goal": "Disputar el futuro prescrito y proteger el statu quo",
+        "goal": "Contest the prescribed future and protect the status quo",
         "narrative": "Control Narrative",
-        "temporality": "El futuro es distante: no hay cambio",
+        "temporality": "The future is distant: no change",
         "activities": "Avoid - Reject - Prevent",
     },
     "EXPANDER": {
         "color": "#7D3C98", "bg": "#F4ECF7",
-        "goal": "Ampliar el futuro prescrito y proponer trayectorias alternativas",
+        "goal": "Expand the prescribed future and propose alternative pathways",
         "narrative": "Bigger Picture Narrative",
-        "temporality": "El futuro es distante: el cambio debe ser más amplio",
+        "temporality": "The future is distant: the change must be broader",
         "activities": "Complexify - Contest - Reroute",
     },
 }
 
 ACTIVITY_META = {
     "EVALUATION": {
-        "definition": "Referencias a cómo los consumidores dan sentido al futuro prescrito.",
+        "definition": "References to how consumers made sense of the prescribed future.",
         "subtypes": {"SIMPLIFY": "CATALYZER", "STALL": "AMBIVALENT", "AVOID": "RESISTANT", "COMPLEXIFY": "EXPANDER"},
     },
     "NEGOTIATION": {
-        "definition": "La actividad mediante la cual los consumidores intentan dar forma a trayectorias colectivas hacia un futuro preferido.",
+        "definition": "The activity through which consumers attempt to shape collective trajectories toward a preferred future.",
         "subtypes": {"ADVOCATE": "CATALYZER", "QUESTION": "AMBIVALENT", "REJECT": "RESISTANT", "CONTEST": "EXPANDER"},
     },
     "ENACTMENT": {
-        "definition": "Referencias a cómo los consumidores dan forma a futuros mediante cambios imaginados, planificados o reales en sus prácticas.",
+        "definition": "References to how consumers gave form to futures through imagined, planned, or actual changes in everyday practices.",
         "subtypes": {"ACCELERATE": "CATALYZER", "DELAY": "AMBIVALENT", "PREVENT": "RESISTANT", "REROUTE": "EXPANDER"},
     },
 }
@@ -536,44 +534,44 @@ SUBTYPE_TO_ORIENTATION = {st: ori for m in ACTIVITY_META.values() for st, ori in
 ORIENTATION_TO_SUBTYPE = {(act, ori): st for act, m in ACTIVITY_META.items() for st, ori in m["subtypes"].items()}
 
 # ─────────────────────────────────────────
-# DESAFÍOS (solo a nivel de corpus; nunca de un comentario)
+# CHALLENGES (corpus level only; never from a single comment)
 # ─────────────────────────────────────────
 CHALLENGE_DEFINITIONS = {
     "CONVOLUTED_EVALUATIONS": {
-        "label": "Evaluaciones enredadas", "activity": "EVALUATION",
+        "label": "Convoluted Evaluations", "activity": "EVALUATION",
         "definition": (
-            "Surgen cuando los consumidores evalúan el futuro prescrito con más o menos "
-            "certeza y minuciosidad. Cuando lo evalúan con supuestos, evidencia y horizontes "
-            "temporales divergentes, las evaluaciones se vuelven enredadas."
+            "Arise as consumers evaluate the prescribed future with more or less certainty and "
+            "thoroughness. When they evaluate it through divergent assumptions, evidence, and "
+            "temporal horizons, evaluations become convoluted."
         ),
     },
     "CONFRONTATIONAL_NEGOTIATIONS": {
-        "label": "Negociaciones confrontacionales", "activity": "NEGOTIATION",
+        "label": "Confrontational Negotiations", "activity": "NEGOTIATION",
         "definition": (
-            "Surgen cuando los consumidores negocian sus futuros preferidos. Cuando abogan, "
-            "cuestionan, rechazan o disputan el futuro prescrito en relación con otros, "
-            "las negociaciones se vuelven confrontacionales."
+            "Arise as consumers negotiate their preferred futures. When they simultaneously advocate "
+            "for, question, reject, or contest the prescribed future in relation to others, "
+            "negotiations become confrontational."
         ),
     },
     "COMPETING_ENACTMENTS": {
-        "label": "Actuaciones en competencia", "activity": "ENACTMENT",
+        "label": "Competing Enactments", "activity": "ENACTMENT",
         "definition": (
-            "Surgen cuando los consumidores actúan sobre futuros preferidos distintos mediante "
-            "sus prácticas actuales. Cuando aceleran, retrasan, previenen o reencaminan el "
-            "futuro prescrito, las actuaciones se vuelven competitivas."
+            "Arise as consumers enact different preferred futures through their current practices. "
+            "When they accelerate, delay, prevent, or re-route the prescribed future through present "
+            "practices, enactments become competitive."
         ),
     },
 }
 
 FRAGILE_FUTURES_DEFINITION = (
-    "Futuros frágiles: futuros preferidos múltiples, volátiles y en conflicto que pueden "
-    "interferir con la materialización del futuro prescrito. Es una condición teórica "
-    "cualitativa que surge de desempeños orientados que interfieren entre sí. NO es un "
-    "puntaje, una probabilidad ni una clasificación de un solo comentario."
+    "Fragile Futures: multiple, volatile, and conflicting preferred futures that may interfere with "
+    "the actualization of the prescribed future. It is a qualitative theoretical condition produced "
+    "when differently oriented performances interfere with one another. It is NOT a score, a "
+    "probability, or a classification of a single comment."
 )
 
 # ─────────────────────────────────────────
-# CONTENIDO DE HOJAS DE RUTA (referencia fija; no lo genera el LLM)
+# ROADMAP CONTENT (fixed reference text; never generated by the model)
 # ─────────────────────────────────────────
 EXPECTED_POLICY_STEP_TITLES = [
     "Determine the prescribed future",
@@ -605,7 +603,7 @@ POLICY_ROADMAP_STEPS = [
      "of future-making interfere with one another."),
     ("4", EXPECTED_POLICY_STEP_TITLES[3], "Match support to the future-making orientations."),
     ("5", EXPECTED_POLICY_STEP_TITLES[4],
-     "Provide infrastructure and build capabilities needed to navigate the change."),
+     "Provide infrastructure and build the capabilities needed to navigate the change."),
     ("6", EXPECTED_POLICY_STEP_TITLES[5],
      "Is the intervention accurate and fair? Do consumers understand it? Who benefits? Who is excluded? "
      "Are alternative pathways emerging?"),
@@ -622,10 +620,10 @@ MANAGER_ROADMAP_STEPS = [
      "Identify which future-making challenges are the most pressing. Monitor where different performances "
      "of future-making interfere with one another."),
     ("4", EXPECTED_MANAGER_STEP_TITLES[3],
-     "Choose strategy based on the orientation and the key future-making challenges."),
+     "Choose a strategy based on the orientation and the key future-making challenges."),
     ("5", EXPECTED_MANAGER_STEP_TITLES[4],
      "Do not rely on a single persuasive frame. Universal claims (\"the change is inevitable,\" "
-     "\"everyone benefits\") may mobilize consumers with catalyzer orientations while intensifying "
+     "\"everyone benefits\") may mobilize consumers with Catalyzer orientations while intensifying "
      "resistance and confrontation elsewhere."),
     ("6", EXPECTED_MANAGER_STEP_TITLES[5],
      "Place support at the touchpoints where consumers must adjust practices: onboarding, everyday "
@@ -634,129 +632,127 @@ MANAGER_ROADMAP_STEPS = [
 ]
 
 STEP2_ORIENTATION_LENS = {
-    "CATALYZER": "Esta orientación ve el futuro prescrito como urgente, deseable y ya en marcha.",
-    "AMBIVALENT": "Esta orientación ve el futuro prescrito como valioso, pero las condiciones aún no están listas.",
-    "RESISTANT": "Esta orientación ve el futuro prescrito como una amenaza para su autonomía, identidad o derechos.",
-    "EXPANDER": "Esta orientación ve el futuro prescrito como un encuadre demasiado estrecho.",
+    "CATALYZER": "This orientation sees the prescribed future as urgent, desirable, and already underway.",
+    "AMBIVALENT": "This orientation sees the prescribed future as valuable, but conditions are not yet ready.",
+    "RESISTANT": "This orientation sees the prescribed future as a threat to autonomy, identity, or rights.",
+    "EXPANDER": "This orientation sees the prescribed future as framed too narrowly.",
 }
 
 POLICY_STEP2_SIGNALS = {
     "CATALYZER": [
-        "Busca lenguaje que enfatice urgencia o inevitabilidad.",
-        "Registra la adopción voluntaria temprana.",
+        "Look for language emphasizing urgency and/or inevitability.",
+        "Track voluntary early adoption.",
     ],
     "AMBIVALENT": [
-        "Busca lenguaje condicional (\"lo haría, pero\") y pruebas sin conversión.",
-        "Diagnostica la condición específica sin resolver.",
+        "Look for conditional language (\"I would, but...\") and trials without conversion.",
+        "Diagnose the specific unresolved condition.",
     ],
     "RESISTANT": [
-        "Busca lenguaje sobre coerción, prohibiciones, pérdida de libertad o desconfianza.",
-        "Registra cancelaciones, opt-outs y oposición organizada.",
+        "Look for language about coercion, bans, loss of choice, and/or distrust.",
+        "Track opt-outs, cancellations, and organized opposition.",
     ],
     "EXPANDER": [
-        "Busca afirmaciones de que la intervención no resuelve el problema de fondo o pide un cambio sistémico.",
-        "Registra visiones de un cambio más amplio.",
+        "Look for claims that the intervention does not address the underlying problem or calls for broader system change.",
+        "Track visions of broader change.",
     ],
 }
 
 MANAGER_STEP2_SIGNALS = {
     "CATALYZER": [
-        "Monitorea el lenguaje de urgencia e inevitabilidad, la participación en pilotos y la defensa pública.",
-        "Identifica los recursos que facilitan la adopción temprana.",
+        "Monitor urgency and inevitability language, early pilot participation, and public advocacy.",
+        "Identify the resources that enable early adoption.",
     ],
     "AMBIVALENT": [
-        "Monitorea el lenguaje condicional, como \"lo haría, pero…\" o \"todavía no\".",
-        "Registra señales de duda.",
-        "Identifica pruebas sin adopción posterior.",
+        "Monitor conditional language such as \"I would, but...\" or \"not yet.\"",
+        "Track signals of hesitation.",
+        "Identify trials without later adoption.",
     ],
     "RESISTANT": [
-        "Monitorea el lenguaje de coerción y vigilancia, los opt-outs y la oposición organizada.",
-        "Distingue la oposición ideológica de la desventaja material.",
+        "Monitor coercion and surveillance language, opt-outs, and organized opposition.",
+        "Distinguish ideological opposition from material disadvantage.",
     ],
     "EXPANDER": [
-        "Observa \"esto no resuelve el problema real\", la defensa de alternativas colectivas y la participación en infraestructuras alternativas.",
+        "Watch for \"this does not solve the real problem,\" advocacy for collective alternatives, and participation in alternative infrastructures.",
     ],
 }
 
 POLICY_STEP3_QUESTIONS = {
-    "CONVOLUTED_EVALUATIONS": "¿Hay evidencia, supuestos u horizontes temporales incompatibles que impidan construir sentido compartido?",
-    "CONFRONTATIONAL_NEGOTIATIONS": "¿El desacuerdo escala en torno a la autonomía, la equidad, la legitimidad o el encuadre del problema?",
-    "COMPETING_ENACTMENTS": "¿Las prácticas que aceleran, retrasan, previenen o reencaminan el cambio crean rutas incompatibles?",
+    "CONVOLUTED_EVALUATIONS": "Is incompatible evidence, assumption, or temporal horizon preventing shared sensemaking?",
+    "CONFRONTATIONAL_NEGOTIATIONS": "Is disagreement escalating around autonomy, fairness, legitimacy, or the framing of the problem?",
+    "COMPETING_ENACTMENTS": "Are accelerating, delaying, preventing, and re-routing practices creating incompatible pathways?",
 }
 
 MANAGER_STEP3_QUESTIONS = {
-    "CONVOLUTED_EVALUATIONS": "¿Los consumidores simplifican, frenan, evitan o complejizan la evaluación del futuro prescrito?",
-    "CONFRONTATIONAL_NEGOTIATIONS": "¿La defensa, las preguntas, el rechazo o la impugnación escalan en conflicto?",
-    "COMPETING_ENACTMENTS": "¿Los consumidores aceleran, retrasan, previenen o reencaminan el cambio mediante conductas incompatibles?",
+    "CONVOLUTED_EVALUATIONS": "Are consumers simplifying, stalling, avoiding, and/or complexifying their evaluation of the prescribed future?",
+    "CONFRONTATIONAL_NEGOTIATIONS": "Are advocacy, questioning, rejection, and/or contestation escalating into conflict?",
+    "COMPETING_ENACTMENTS": "Are consumers accelerating, delaying, preventing, and/or re-routing practice change through incompatible behaviors?",
 }
 
 POLICY_STEP4_OBJECTIVES = {
-    "CATALYZER": "Habilitar una aceleración responsable solo cuando pueda demostrarse valor público.",
-    "AMBIVALENT": "Convertir la incertidumbre en decisiones seguras.",
-    "RESISTANT": "Proteger los derechos de los consumidores y distribuir responsabilidades de forma justa.",
-    "EXPANDER": "Considerar futuros alternativos y planificar políticas escalonadas hacia un cambio más amplio.",
+    "CATALYZER": "Enable responsible acceleration only where public value can be demonstrated.",
+    "AMBIVALENT": "Convert uncertainty into confident decisions.",
+    "RESISTANT": "Protect consumer rights and ensure a fair distribution of responsibility.",
+    "EXPANDER": "Consider alternative futures and plan staged policies toward broader change.",
 }
 
 MANAGER_STEP4_OBJECTIVES = {
     "CATALYZER": {
-        "objective": "Convertir el entusiasmo en experimentación creíble y responsable.",
-        "avoid": "Afirmaciones de inevitabilidad; tratar a los adoptantes tempranos como prueba de que la transición es fácil para todos.",
+        "objective": "Convert enthusiasm into credible and responsible experimentation.",
+        "avoid": "Inevitability claims; treating early adopters as proof that the transition is easy for everyone.",
     },
     "AMBIVALENT": {
-        "objective": "Convertir la incertidumbre general en condiciones específicas y atendibles.",
-        "avoid": "Presión y urgencia artificial; tratar la duda como ignorancia o resistencia.",
+        "objective": "Convert general uncertainty into specific, addressable conditions.",
+        "avoid": "Pressure and artificial urgency; framing hesitation as ignorance or resistance.",
     },
     "RESISTANT": {
-        "objective": "Proteger los derechos de los consumidores y distribuir responsabilidades de forma justa.",
-        "avoid": "\"No hay alternativa\"; la burla; la automatización oculta de decisiones.",
+        "objective": "Protect consumer rights and ensure a fair distribution of responsibility.",
+        "avoid": "\"There is no alternative\"; ridicule; hidden automation of decisions.",
     },
     "EXPANDER": {
-        "objective": "Incorporar la crítica sistémica y explorar futuros alternativos.",
-        "avoid": "Presentar la intervención como solución completa; descartar las críticas.",
+        "objective": "Incorporate systemic critique and explore alternative futures.",
+        "avoid": "Presenting the intervention as a complete solution; dismissing critiques.",
     },
 }
 
 POLICY_IMPLICATIONS = {
     "CATALYZER": (
-        "Estos consumidores pueden describir el futuro prescrito como deseable, inevitable y ya en marcha. "
-        "Su experiencia muestra qué facilita hoy la adopción, pero no debe tomarse como prueba de que otros "
-        "consumidores puedan o deban seguir el mismo camino."
+        "These consumers may describe the prescribed future as desirable, inevitable, and already underway. "
+        "Their experience shows what currently facilitates adoption, but it should not be treated as proof "
+        "that other consumers can or should follow the same path."
     ),
     "AMBIVALENT": (
-        "Estos consumidores pueden considerar el futuro prescrito potencialmente beneficioso, pero ven "
-        "condiciones particulares sin resolver. La ambivalencia puede ser constructiva: revela puntos débiles "
-        "y exige infraestructura más sólida antes de una adopción masiva."
+        "These consumers may see the prescribed future as potentially beneficial while regarding particular "
+        "conditions as unresolved. Ambivalence can be constructive: it surfaces weak points and calls for "
+        "stronger infrastructure before large-scale adoption."
     ),
     "RESISTANT": (
-        "Estos consumidores pueden presentar el futuro prescrito como coercitivo, inequitativo o amenazante "
-        "para su autonomía, identidad o prácticas establecidas. Examinar esta orientación ayuda a entender "
-        "las razones del rechazo."
+        "These consumers may frame the prescribed future as coercive, inequitable, or a threat to their "
+        "autonomy, identity, or established practices. Examining this orientation helps explain the reasons "
+        "behind pushback."
     ),
     "EXPANDER": (
-        "Estos consumidores pueden argumentar que la intervención atiende un problema estrechamente "
-        "encuadrado y deja sin resolver problemas más amplios, lo que revela temas que quizá no se "
-        "consideraron al diseñarla."
+        "These consumers may argue that the intervention addresses a narrowly framed problem and leaves "
+        "broader problems unresolved, which surfaces issues that may not have been considered when it was designed."
     ),
 }
 
 MANAGER_IMPLICATIONS = {
     "CATALYZER": (
-        "Los Catalyzer simplifican la evaluación, defienden el futuro prescrito y aceleran la adopción. Su "
-        "entusiasmo puede normalizar nuevas prácticas, pero puede ocultar los recursos y competencias que "
-        "hicieron posible la adopción temprana."
+        "Catalyzers simplify their evaluation, advocate for the prescribed future, and accelerate adoption. "
+        "Their enthusiasm can normalize new practices, but it can also hide the resources and competencies "
+        "that made early adoption possible."
     ),
     "AMBIVALENT": (
-        "Los consumidores Ambivalent ven un valor potencial, pero consideran que ciertas condiciones no están "
-        "resueltas. Su duda puede señalar barreras atendibles, no oposición generalizada."
+        "Ambivalent consumers see potential value but regard certain conditions as unresolved. Their hesitation "
+        "can identify addressable barriers rather than general opposition."
     ),
     "RESISTANT": (
-        "Los consumidores Resistant perciben amenazas a su autonomía, identidad, derechos o prácticas "
-        "establecidas. Evitan la evaluación, rechazan el futuro prescrito y buscan impedir su materialización."
+        "Resistant consumers perceive threats to their autonomy, identity, rights, or established practices. "
+        "They avoid evaluation, reject the prescribed future, and seek to prevent its enactment."
     ),
     "EXPANDER": (
-        "Los Expander complejizan la evaluación, impugnan el futuro prescrito y reencaminan la adopción hacia "
-        "alternativas más amplias. Revelan propuestas de valor más amplias y trayectorias alternativas o "
-        "complementarias."
+        "Expanders complexify their evaluation, contest the prescribed future, and reroute adoption toward "
+        "broader alternatives. They reveal broader value propositions and alternative or complementary pathways."
     ),
 }
 
@@ -785,26 +781,26 @@ CHALLENGE_POLICY_GUIDANCE = {
     "CONVOLUTED_EVALUATIONS": {
         "diagnostic_question": POLICY_STEP3_QUESTIONS["CONVOLUTED_EVALUATIONS"],
         "action": (
-            "Identifica la evidencia, los supuestos o los horizontes temporales incompatibles detrás de "
-            "evaluaciones divergentes, y apoya la construcción de sentido compartido (por ejemplo, una "
-            "evaluación común de precisión, compensaciones y efectos distributivos), en lugar de tratar una "
-            "evaluación como correcta y las demás como desinformadas."
+            "Identify the incompatible evidence, assumptions, or temporal horizons behind divergent "
+            "evaluations, and support shared sensemaking (for example, a shared assessment of accuracy, "
+            "trade-offs, and distributional effects) rather than treating one evaluation as correct and "
+            "the others as misinformed."
         ),
     },
     "CONFRONTATIONAL_NEGOTIATIONS": {
         "diagnostic_question": POLICY_STEP3_QUESTIONS["CONFRONTATIONAL_NEGOTIATIONS"],
         "action": (
-            "Crea oportunidades legítimas y accesibles para comparar, cuestionar, impugnar y negociar. "
-            "Reconsidera el encuadre o las medidas de apoyo cuando el conflicto escale, en lugar de depender "
-            "de una persuasión unilateral más fuerte o de presentar el futuro prescrito como inevitable."
+            "Create legitimate, accessible opportunities to compare, question, contest, and negotiate. "
+            "Reconsider the framing or support measures when conflict escalates, instead of relying on "
+            "stronger one-way persuasion or presenting the prescribed future as inevitable."
         ),
     },
     "COMPETING_ENACTMENTS": {
         "diagnostic_question": POLICY_STEP3_QUESTIONS["COMPETING_ENACTMENTS"],
         "action": (
-            "Identifica cómo las prácticas actuales aceleran, retrasan, previenen o reencaminan el futuro "
-            "prescrito. Determina si estas rutas pueden coexistir o interferir entre sí, y coordina el apoyo "
-            "entre rutas viables sin tratar toda divergencia como incumplimiento."
+            "Identify how current practices accelerate, delay, prevent, or re-route the prescribed future. "
+            "Determine whether these pathways can coexist or interfere with one another, and coordinate "
+            "support across viable pathways without treating every divergence as noncompliance."
         ),
     },
 }
@@ -813,47 +809,45 @@ CHALLENGE_MANAGER_GUIDANCE = {
     "CONVOLUTED_EVALUATIONS": {
         "diagnostic_question": MANAGER_STEP3_QUESTIONS["CONVOLUTED_EVALUATIONS"],
         "action": (
-            "Monitorea cómo los consumidores evalúan la viabilidad y deseabilidad del futuro prescrito en los "
-            "puntos de contacto relevantes: afirmaciones contradictorias, preguntas sin resolver, comparaciones "
-            "repetidas, solicitudes de evidencia, abandono durante el alta y brechas entre lo que promete la "
-            "organización y la experiencia del consumidor."
+            "Monitor how consumers assess the feasibility and desirability of the prescribed future at "
+            "relevant touchpoints: contradictory claims, unresolved questions, repeated comparisons, requests "
+            "for evidence, abandoned onboarding, and gaps between what the organization promises and what "
+            "consumers experience."
         ),
     },
     "CONFRONTATIONAL_NEGOTIATIONS": {
         "diagnostic_question": MANAGER_STEP3_QUESTIONS["CONFRONTATIONAL_NEGOTIATIONS"],
         "action": (
-            "Monitorea los intercambios en los que los consumidores defienden futuros preferidos, responden a "
-            "afirmaciones competidoras o intentan influir en trayectorias colectivas. Indicadores: defensa, "
-            "preguntas persistentes, rechazo explícito, impugnación sistémica, discusión polarizada y disputas "
-            "sobre autonomía o legitimidad."
+            "Monitor exchanges in which consumers defend preferred futures, respond to competing claims, or "
+            "try to influence collective trajectories. Indicators: advocacy, persistent questioning, explicit "
+            "rejection, systemic contestation, polarized discussion, and disputes over autonomy or legitimacy."
         ),
     },
     "COMPETING_ENACTMENTS": {
         "diagnostic_question": MANAGER_STEP3_QUESTIONS["COMPETING_ENACTMENTS"],
         "action": (
-            "Monitorea lo que los consumidores hacen en el presente: adopción rápida, pruebas sin continuidad, "
-            "uso retrasado, negativas, dependencia continua de prácticas existentes y movimiento hacia rutas "
-            "alternativas. Estas prácticas son evidencia de los futuros preferidos que los consumidores materializan."
+            "Monitor what consumers do in the present: rapid adoption, trials without continuation, delayed "
+            "use, refusals, continued reliance on existing practices, and movement toward alternative pathways. "
+            "These practices are evidence of the preferred futures consumers are enacting."
         ),
     },
 }
 
 MANAGER_MESSAGING_NOTE = (
-    "No dependas de un solo marco persuasivo. Las afirmaciones universales (\"el cambio es inevitable\", "
-    "\"todos ganan\") pueden movilizar a consumidores Catalyzer mientras intensifican la resistencia y la "
-    "confrontación en otros grupos."
+    "Do not rely on a single persuasive frame. Universal claims (\"the change is inevitable,\" \"everyone "
+    "benefits\") may mobilize consumers with Catalyzer orientations while intensifying resistance and "
+    "confrontation elsewhere."
 )
 
 CROSS_ORIENTATION_NOTE = (
-    "Verificación de interferencia entre orientaciones: una respuesta dirigida a una orientación puede "
-    "intensificar un desafío en otra. Por ejemplo, una campaña de evidencia que tranquiliza a los "
-    "consumidores Ambivalent puede profundizar la desconfianza Resistant si ignora la autonomía, o reforzar "
-    "la crítica Expander si presenta la intervención como solución completa. Revisa estos efectos antes de "
-    "finalizar una respuesta."
+    "Cross-orientation interference check: a response aimed at one orientation may intensify a challenge "
+    "for another. For example, an evidence campaign that reassures Ambivalent consumers may deepen Resistant "
+    "distrust if it ignores autonomy, or reinforce Expander critique if it presents the intervention as a "
+    "complete solution. Check for these effects before finalizing a response."
 )
 
 # ─────────────────────────────────────────
-# EJEMPLOS DEL PAPER (demostración y chequeo interno)
+# PAPER EXAMPLES (demonstration and internal check)
 # ─────────────────────────────────────────
 PF_EV = (
     "Transition all vehicles to Zero Emission Vehicles (ZEV), including electric vehicles, to achieve "
@@ -862,7 +856,7 @@ PF_EV = (
 
 DEMO_EXAMPLES = [
     {
-        "id": "joe", "titulo": "Joe (consulta pública): Negociación · Advocate · Catalyzer",
+        "id": "joe", "titulo": "Joe (public consultation): Negotiation · Advocate · Catalyzer",
         "comment": (
             "We are already so far behind! We need to sprint to catch up. We should be WORLD LEADERS in "
             "solar and battery manufacturing. Why are we not using our own minerals to make batteries for "
@@ -870,10 +864,10 @@ DEMO_EXAMPLES = [
         ),
         "context": "", "context_type": "NONE",
         "referencia": {"activity": "NEGOTIATION", "subtype": "ADVOCATE", "orientation": "CATALYZER"},
-        "nota_paper": "Llama a acelerar y a reclutar a otros. La negociación busca movilizar una trayectoria colectiva.",
+        "nota_paper": "Calls for acceleration and recruits others. Negotiation seeks to mobilize a collective trajectory.",
     },
     {
-        "id": "clara", "titulo": "Clara (entrevista): Evaluación · Stall · Ambivalent",
+        "id": "clara", "titulo": "Clara (interview): Evaluation · Stall · Ambivalent",
         "comment": (
             "Living in Outback Northwest Queensland there's no charging stations at the time. I did like the "
             "appeal of an electric vehicle mainly because you don't have to put fuel in it, which is great. "
@@ -882,34 +876,34 @@ DEMO_EXAMPLES = [
         ),
         "context": "", "context_type": "NONE",
         "referencia": {"activity": "EVALUATION", "subtype": "STALL", "orientation": "AMBIVALENT"},
-        "nota_paper": "Evalúa el EV según la factibilidad (carga, viajes largos) sin rediseñar sus rutinas: evaluación que frena.",
+        "nota_paper": "Evaluates the EV in terms of feasibility (charging, long trips) without redesigning her routines: an evaluation that stalls.",
     },
     {
-        "id": "martin", "titulo": "Martin (redes sociales): Negociación · Question · Ambivalent",
+        "id": "martin", "titulo": "Martin (social media): Negotiation · Question · Ambivalent",
         "comment": "Have you thought about what they are gonna do with all the batteries once they expire because they aren't recyclable?",
         "context": "", "context_type": "NONE",
         "referencia": {"activity": "NEGOTIATION", "subtype": "QUESTION", "orientation": "AMBIVALENT"},
-        "nota_paper": "Pregunta si el sistema está listo. Es una pregunta que plantea una condición para avanzar.",
+        "nota_paper": "Asks whether the system is ready. The question sets a condition that must be met before moving forward.",
     },
     {
-        "id": "raj", "titulo": "Raj (video): Negociación · Reject · Resistant",
+        "id": "raj", "titulo": "Raj (video): Negotiation · Reject · Resistant",
         "comment": "We don't need politicians and their cronies telling us what sort of car we can have.",
         "context": "", "context_type": "NONE",
         "referencia": {"activity": "NEGOTIATION", "subtype": "REJECT", "orientation": "RESISTANT"},
-        "nota_paper": "Rechaza la autoridad que impulsa la intervención y defiende la libertad de elección.",
+        "nota_paper": "Rejects the authority behind the intervention and defends freedom of choice.",
     },
     {
-        "id": "startt", "titulo": "StarT (noticias): Actuación · Prevent · Resistant",
+        "id": "startt", "titulo": "StarT (news): Enactment · Prevent · Resistant",
         "comment": (
             "I for one WILL NOT be forced into an elec vehicle and spend half my travel time charging the damn "
             "thing to go to hell."
         ),
         "context": "", "context_type": "NONE",
         "referencia": {"activity": "ENACTMENT", "subtype": "PREVENT", "orientation": "RESISTANT"},
-        "nota_paper": "Declara que no adoptará el EV, es decir, que mantiene su práctica actual y se niega a cambiar.",
+        "nota_paper": "Declares that they will not adopt an EV, that is, they keep their current practice and refuse to change.",
     },
     {
-        "id": "johnny", "titulo": "Johnny (Facebook): Actuación · Accelerate · Catalyzer",
+        "id": "johnny", "titulo": "Johnny (Facebook): Enactment · Accelerate · Catalyzer",
         "comment": (
             "Toyota is still very much trying to slow down the transition to EVs. We have ordered two Teslas "
             "that will be delivered hopefully this year. We are selling our Prado and it looks like we are "
@@ -917,10 +911,10 @@ DEMO_EXAMPLES = [
         ),
         "context": "", "context_type": "NONE",
         "referencia": {"activity": "ENACTMENT", "subtype": "ACCELERATE", "orientation": "CATALYZER"},
-        "nota_paper": "Compra EV y vende sus vehículos a combustión: materializa el futuro prescrito.",
+        "nota_paper": "Buys EVs and sells combustion vehicles: materializes the prescribed future.",
     },
     {
-        "id": "peter", "titulo": "Peter (entrevista): Evaluación · Complexify · Expander",
+        "id": "peter", "titulo": "Peter (interview): Evaluation · Complexify · Expander",
         "comment": (
             "The embodied carbon in a new vehicle is more than the emissions that are going to be produced by "
             "the current vehicle over the course of its lifetime until it falls apart. So that's the plan: to "
@@ -931,25 +925,25 @@ DEMO_EXAMPLES = [
         "context": "", "context_type": "NONE",
         "referencia": {"activity": "EVALUATION", "subtype": "COMPLEXIFY", "orientation": "EXPANDER"},
         "nota_paper": (
-            "Evalúa las emisiones incorporadas y decide conservar su auto. La bicicleta de carga es una práctica "
-            "secundaria de reroute: al activar clasificaciones secundarias, la herramienta puede detectarla."
+            "Evaluates embodied emissions and decides to keep his car. The cargo bike is a secondary reroute practice: "
+            "when secondary classifications are enabled, the tool can detect it."
         ),
     },
     {
-        "id": "phillip", "titulo": "Phillip (consulta pública): Actuación · Reroute · Expander",
+        "id": "phillip", "titulo": "Phillip (public consultation): Enactment · Reroute · Expander",
         "comment": (
             "I uprooted my life and moved from the Sunshine Coast to Melbourne with some of my strongest "
             "reasoning being the ability to use public transport, ride a bike around and use a car as little as possible."
         ),
         "context": "", "context_type": "NONE",
         "referencia": {"activity": "ENACTMENT", "subtype": "REROUTE", "orientation": "EXPANDER"},
-        "nota_paper": "Cambió de lugar de residencia para depender menos del auto: reencamina su práctica hacia un futuro más amplio.",
+        "nota_paper": "Moved home to depend less on the car: redirects his practice toward a broader future.",
     },
 ]
 
 DEMO_BY_ID = {ex["id"]: ex for ex in DEMO_EXAMPLES}
 
-# Conversación del paper (foro). Los vínculos son de adyacencia: cada usuario responde al anterior.
+# Paper conversation (forum). Links are adjacency: each user replies to the previous one.
 DEMO_CONVERSATION = """User 1: EVs will be on an exponential adoption curve. Everyone will want one... Nobody will want an expensive 2nd hand ICE... Globally, governments are going to start making fossil fuels very expensive. T-A-X-E-S will be levied on this foul, polluting rubbish we are all burning today... Or are you advocating that we go back to bicycles and horses, or maybe just buses?
 
 User 2: Better tell that to the Prius owners replacing their batteries. My car is now 13 years old... Batteries wear over time... so what magic bullet have you discovered that defies physics...? Once someone like me can get a used EV for <$10k, and have the battery replaced cheaply, then I'll agree with you... I'm not anti EV, I'm just realistic about costs and time frames.
@@ -966,7 +960,7 @@ DEMO_CONVERSATION_REFERENCE = {
 }
 
 # ─────────────────────────────────────────
-# SALIDA Y CONSISTENCIA DEL MODELO
+# MODEL OUTPUT AND CONSISTENCY
 # ─────────────────────────────────────────
 EXPECTED_OUTPUT_SCHEMA_KEYS = [
     "prescribed_future_acknowledged", "main_activity", "activity_subtype",
@@ -1001,30 +995,27 @@ def get_secondary_classifications(result: dict) -> list:
 
 
 def normalize_classification(activity: str, subtype: str, orientation: str):
-    """Corrige una combinación actividad/subtipo/orientación según la matriz de la sección D.
-    Devuelve (actividad, subtipo, orientación, notas)."""
+    """Corrects an activity/subtype/orientation combination using the Section D matrix.
+    Returns (activity, subtype, orientation, notes)."""
     notes = []
     activity = activity if activity in ACTIVITY_META else ""
     subtype = subtype if subtype in SUBTYPE_TO_ACTIVITY else ""
     orientation = orientation if orientation in ORIENTATIONS else ""
 
     if subtype and activity and SUBTYPE_TO_ACTIVITY[subtype] != activity:
-        notes.append(f"actividad corregida de {activity} a {SUBTYPE_TO_ACTIVITY[subtype]}")
+        notes.append(f"activity corrected from {activity} to {SUBTYPE_TO_ACTIVITY[subtype]}")
         activity = SUBTYPE_TO_ACTIVITY[subtype]
     if subtype and not activity:
         activity = SUBTYPE_TO_ACTIVITY[subtype]
     if subtype and not orientation:
         orientation = SUBTYPE_TO_ORIENTATION[subtype]
-        notes.append(f"orientación derivada del subtipo {subtype}")
+        notes.append(f"orientation derived from subtype {subtype}")
     if activity and orientation:
         expected = ORIENTATION_TO_SUBTYPE[(activity, orientation)]
         if subtype != expected:
-            notes.append(f"subtipo ajustado de {subtype or 'vacío'} a {expected}")
+            notes.append(f"subtype adjusted from {subtype or 'empty'} to {expected}")
             subtype = expected
     return activity, subtype, orientation, notes
-
-
-MAX_NOTE_CHARS = 300
 
 
 def enforce_consistency(result: dict) -> dict:
@@ -1042,11 +1033,11 @@ def enforce_consistency(result: dict) -> dict:
     for i, item in enumerate(get_secondary_classifications(result)):
         a, s, o, n = normalize_classification(item["activity"], item["activity_subtype"], item["orientation"])
         if not (a and s and o):
-            notes.append(f"secundaria {i + 1} descartada por estar incompleta")
+            notes.append(f"secondary {i + 1} discarded (incomplete)")
             continue
         if (a, s, o) == main or any((a, s, o) == (x["activity"], x["activity_subtype"], x["orientation"]) for x in secondary):
             continue
-        notes += [f"secundaria {i + 1}: {x}" for x in n]
+        notes += [f"secondary {i + 1}: {x}" for x in n]
         item.update(activity=a, activity_subtype=s, orientation=o)
         secondary.append(item)
     result["secondary_classifications"] = secondary[:MAX_SECONDARY]
@@ -1064,7 +1055,7 @@ def enforce_context_metadata(result: dict, context_available: bool, context_type
 
 
 # ─────────────────────────────────────────
-# LLAMADA AL MODELO CON REINTENTOS
+# MODEL CALL WITH RETRIES
 # ─────────────────────────────────────────
 def _call_model(system_prompt: str, user_message: str) -> str:
     last_error = None
@@ -1084,10 +1075,10 @@ def _call_model(system_prompt: str, user_message: str) -> str:
         except (openai.RateLimitError, openai.APITimeoutError,
                 openai.APIConnectionError, openai.InternalServerError) as e:
             last_error = e
-            logger.warning("Intento %d fallido (%s); se reintenta.", attempt + 1, type(e).__name__)
+            logger.warning("Attempt %d failed (%s); retrying.", attempt + 1, type(e).__name__)
             time.sleep(2 ** attempt)
     raise RuntimeError(
-        "El servicio de análisis no respondió tras varios intentos. Intenta de nuevo en unos minutos."
+        "The analysis service did not respond after several attempts. Please try again in a few minutes."
     ) from last_error
 
 
@@ -1095,9 +1086,9 @@ def _parse_json(content: str) -> dict:
     try:
         data = json.loads(content)
     except json.JSONDecodeError as e:
-        raise ValueError("La respuesta del modelo no fue un JSON válido. Intenta de nuevo.") from e
+        raise ValueError("The model response was not valid JSON. Please try again.") from e
     if not isinstance(data, dict):
-        raise ValueError("La respuesta del modelo no tiene la estructura esperada.")
+        raise ValueError("The model response does not have the expected structure.")
     return data
 
 
@@ -1106,7 +1097,7 @@ def analyze_comment(prescribed_future: str, focal_text: str, context_text: str =
                     allow_secondary: bool = True) -> dict:
     focal_text = (focal_text or "").strip()
     if not focal_text:
-        raise ValueError("El comentario está vacío.")
+        raise ValueError("The comment is empty.")
 
     if is_consultation:
         focal_label = "FOCAL RESPONSE TO CLASSIFY"
@@ -1141,14 +1132,14 @@ Apply the Decision Procedure in Section E in order. FIRST ask whether the focal 
     parsed = fill_schema(_parse_json(content))
     parsed = enforce_consistency(parsed)
     if not (parsed["main_activity"] and parsed["activity_subtype"] and parsed["main_orientation"]):
-        raise ValueError("El modelo no devolvió una clasificación completa. Intenta de nuevo.")
+        raise ValueError("The model did not return a complete classification. Please try again.")
     if not allow_secondary:
         parsed["secondary_classifications"] = []
     return enforce_context_metadata(parsed, context_available, context_type)
 
 
 def _safe_analyze(prescribed_future: str, rec: dict) -> dict:
-    """Nunca lanza excepciones: devuelve {'_error': mensaje} si algo falla."""
+    """Never raises: returns {'_error': message} if anything fails."""
     try:
         return analyze_comment(
             prescribed_future, rec["comment_text"], rec.get("context_text", ""),
@@ -1157,8 +1148,8 @@ def _safe_analyze(prescribed_future: str, rec: dict) -> dict:
     except (ValueError, RuntimeError) as e:
         return {"_error": str(e)}
     except Exception:
-        logger.exception("Error inesperado al analizar el comentario %s", rec.get("comment_id"))
-        return {"_error": "Error inesperado al analizar este comentario (ver registro del servidor)."}
+        logger.exception("Unexpected error while analyzing comment %s", rec.get("comment_id"))
+        return {"_error": "Unexpected error while analyzing this comment (see the server log)."}
 
 
 def analyze_document(records: list, prescribed_future: str, progress_callback=None) -> list:
@@ -1190,7 +1181,7 @@ def analyze_document(records: list, prescribed_future: str, progress_callback=No
 
 
 # ─────────────────────────────────────────
-# LECTURA DE DATOS Y ESTRUCTURA DE HILOS
+# DATA READING AND THREAD STRUCTURE
 # ─────────────────────────────────────────
 def has_comment_text_column(df: pd.DataFrame) -> bool:
     cols = {str(c).lower().strip() for c in df.columns}
@@ -1222,7 +1213,7 @@ def build_comment_records_from_user_labels(text: str) -> list:
         records.append({
             "comment_id": f"user{num}",
             "thread_id": LABELED_THREAD,
-            # Adyacencia: cada usuario responde al anterior (supuesto explícito, no verificado).
+            # Adjacency: each user replies to the previous one (explicit assumption, not verified).
             "parent_comment_id": f"user{kept[pos - 1][0]}" if pos > 0 else None,
             "author": f"User {num}", "timestamp": "",
             "comment_text": cleaned, "original_index": pos,
@@ -1231,7 +1222,7 @@ def build_comment_records_from_user_labels(text: str) -> list:
 
 
 def build_comment_records_from_paragraphs(text: str):
-    """Devuelve (registros, cantidad_descartada)."""
+    """Returns (records, number_discarded)."""
     blocks = [re.sub(r'\s+', ' ', p).strip()
               for p in re.split(r'\n\s*\n+', (text or "").strip()) if p.strip()]
     records, discarded = [], 0
@@ -1302,7 +1293,7 @@ def build_comment_records_from_consultation(text: str) -> list:
 
 
 def ensure_unique_ids(records: list) -> int:
-    """Renombra identificadores repetidos. Devuelve cuántos se renombraron."""
+    """Renames duplicate identifiers. Returns how many were renamed."""
     used, renamed = set(), 0
     for r in records:
         base = str(r["comment_id"])
@@ -1318,7 +1309,7 @@ def ensure_unique_ids(records: list) -> int:
 
 
 def select_within_limit(records: list, limit: int):
-    """Selecciona comentarios sin partir hilos. Devuelve (seleccionados, omitidos)."""
+    """Selects comments without splitting threads. Returns (selected, omitted_count)."""
     groups, index = [], {}
     for r in records:
         tid = r["thread_id"]
@@ -1349,8 +1340,8 @@ def index_threads(records: list):
 
 def build_context(record: dict, by_id: dict, thread_order: dict,
                   consultation_prompt: str = "", is_consultation: bool = False):
-    """Devuelve (texto_de_contexto, tipo_de_contexto, hay_contexto).
-    Los hilos solo se usan cuando son reales (no para comentarios sin hilo)."""
+    """Returns (context_text, context_type, has_context).
+    Threads are used only when they are real (never for comments without a thread)."""
     parts, context_type = [], "NONE"
     focal_id = record["comment_id"]
     thread_id = record["thread_id"]
@@ -1409,11 +1400,11 @@ def pseudonymize(author: str) -> str:
     if not author:
         return ""
     digest = hashlib.sha256(author.encode("utf-8")).hexdigest()[:6].upper()
-    return f"Participante {digest}"
+    return f"Participant {digest}"
 
 
 # ─────────────────────────────────────────
-# AGREGACIÓN (corpus). Nunca diagnostica un desafío automáticamente.
+# AGGREGATION (corpus level). Never diagnoses a challenge automatically.
 # ─────────────────────────────────────────
 def compute_dominant_distributions(results: list) -> dict:
     valid = [r for r in results if r and "_error" not in r]
@@ -1438,7 +1429,7 @@ def compute_dominant_distributions(results: list) -> dict:
 
 
 def orientation_coexistence(results: list) -> dict:
-    """Cuántas orientaciones aparecen en el conjunto y con qué proporción."""
+    """How many orientations appear in the set, and their shares."""
     counts = {o: 0 for o in ORIENTATION_ORDER}
     for r in results:
         o = _clean_enum(r.get("main_orientation", "")).upper()
@@ -1456,7 +1447,7 @@ def orientation_coexistence(results: list) -> dict:
 
 
 def orientations_by_thread(results: list) -> dict:
-    """Para hilos reales con al menos dos comentarios: orientaciones presentes en cada uno."""
+    """For real threads with at least two comments: which orientations appear in each."""
     table = {}
     for r in results:
         tid = r.get("_thread_id", DEFAULT_THREAD)
@@ -1471,8 +1462,8 @@ def orientations_by_thread(results: list) -> dict:
 
 
 def compute_challenge_review_candidates(results: list) -> dict:
-    """Marca PARES ENLAZADOS con la misma actividad y distinto desempeño, para revisión humana.
-    No diagnostica el desafío ni asigna puntajes."""
+    """Flags LINKED pairs with the same activity but different performance, for human review.
+    Does not diagnose the challenge and does not assign scores."""
     valid = [r for r in results if r and "_error" not in r]
     by_id = {r.get("_comment_id"): r for r in valid if r.get("_comment_id")}
     candidates = {k: [] for k in CHALLENGE_DEFINITIONS}
@@ -1497,7 +1488,7 @@ def compute_challenge_review_candidates(results: list) -> dict:
 
 
 # ─────────────────────────────────────────
-# PRUEBAS ESTRUCTURALES Y CHEQUEO DE CONSISTENCIA (desde la terminal)
+# STRUCTURAL TESTS AND CONSISTENCY CHECK (from the terminal)
 # ─────────────────────────────────────────
 REQUIRED_ORIENTATIONS = set(ORIENTATION_ORDER)
 REQUIRED_SUBTYPES = {
@@ -1506,14 +1497,14 @@ REQUIRED_SUBTYPES = {
     "ENACTMENT": {"ACCELERATE", "DELAY", "PREVENT", "REROUTE"},
 }
 REQUIRED_CHALLENGES = {"CONVOLUTED_EVALUATIONS", "CONFRONTATIONAL_NEGOTIATIONS", "COMPETING_ENACTMENTS"}
-OBSOLETE_TERMS_FILE = "terminos_prohibidos.txt"  # opcional: una expresión por línea
+OBSOLETE_TERMS_FILE = "terminos_prohibidos.txt"  # optional: one term per line
 
 
 def check_obsolete_terms():
     base = Path(__file__).resolve().parent
     list_file = base / OBSOLETE_TERMS_FILE
     if not list_file.exists():
-        return True, f"Archivo {OBSOLETE_TERMS_FILE} no encontrado (prueba omitida)"
+        return True, f"{OBSOLETE_TERMS_FILE} not found (test skipped)"
     terms = [t.strip().lower() for t in list_file.read_text(encoding="utf-8").splitlines() if t.strip()]
     hits = []
     for name in ("motor.py", "app.py"):
@@ -1521,59 +1512,59 @@ def check_obsolete_terms():
         if path.exists():
             text = path.read_text(encoding="utf-8").lower()
             hits += [f"{name}: '{t}'" for t in terms if t in text]
-    return not hits, "Sin hallazgos" if not hits else "; ".join(hits)
+    return not hits, "No findings" if not hits else "; ".join(hits)
 
 
 def run_framework_validation() -> list:
-    """Devuelve una lista de (nombre, aprobada, detalle). Sin llamadas a la API."""
+    """Returns a list of (name, passed, detail). No API calls."""
     tests = []
 
     def add(name, ok, detail=""):
         tests.append((name, bool(ok), detail))
 
-    add("Exactamente 4 orientaciones", set(ORIENTATIONS) == REQUIRED_ORIENTATIONS,
-        f"Encontradas: {sorted(ORIENTATIONS)}")
+    add("Exactly 4 orientations", set(ORIENTATIONS) == REQUIRED_ORIENTATIONS,
+        f"Found: {sorted(ORIENTATIONS)}")
     for act, subs in REQUIRED_SUBTYPES.items():
         found = set(ACTIVITY_META.get(act, {}).get("subtypes", {}))
-        add(f"{act}: 4 subtipos esperados", found == subs, f"Encontrados: {sorted(found)}")
-    add("Matriz orientación × actividad completa (12 combinaciones)",
-        len(ORIENTATION_TO_SUBTYPE) == 12, f"Encontradas: {len(ORIENTATION_TO_SUBTYPE)}")
-    add("Hoja de ruta de política: 7 pasos en orden",
+        add(f"{act}: 4 expected subtypes", found == subs, f"Found: {sorted(found)}")
+    add("Orientation x activity matrix complete (12 combinations)",
+        len(ORIENTATION_TO_SUBTYPE) == 12, f"Found: {len(ORIENTATION_TO_SUBTYPE)}")
+    add("Policy roadmap: 7 steps in order",
         [t for _, t, _ in POLICY_ROADMAP_STEPS] == EXPECTED_POLICY_STEP_TITLES, "")
-    add("Hoja de ruta gerencial: 6 pasos en orden",
+    add("Managerial roadmap: 6 steps in order",
         [t for _, t, _ in MANAGER_ROADMAP_STEPS] == EXPECTED_MANAGER_STEP_TITLES, "")
-    add("Exactamente 3 desafíos", set(CHALLENGE_DEFINITIONS) == REQUIRED_CHALLENGES,
-        f"Encontrados: {sorted(CHALLENGE_DEFINITIONS)}")
-    add("Guía de desafíos completa (pregunta y acción)",
+    add("Exactly 3 challenges", set(CHALLENGE_DEFINITIONS) == REQUIRED_CHALLENGES,
+        f"Found: {sorted(CHALLENGE_DEFINITIONS)}")
+    add("Challenge guidance complete (question and action)",
         all("diagnostic_question" in CHALLENGE_POLICY_GUIDANCE.get(k, {})
             and "action" in CHALLENGE_POLICY_GUIDANCE.get(k, {})
             and "diagnostic_question" in CHALLENGE_MANAGER_GUIDANCE.get(k, {})
             and "action" in CHALLENGE_MANAGER_GUIDANCE.get(k, {})
             for k in REQUIRED_CHALLENGES), "")
-    add("Preguntas del Paso 3 distintas entre hojas de ruta",
+    add("Step 3 diagnostic questions differ between roadmaps",
         all(POLICY_STEP3_QUESTIONS[k] != MANAGER_STEP3_QUESTIONS[k] for k in REQUIRED_CHALLENGES), "")
-    add("Guía de orientaciones completa en ambas hojas",
+    add("Orientation guidance complete in both roadmaps",
         all(o in POLICY_ORIENTATION_GUIDANCE and o in MANAGER_ORIENTATION_GUIDANCE
             for o in REQUIRED_ORIENTATIONS), "")
-    add("Gerencial incluye 'avoid'; política no lo incluye",
+    add("Managerial guidance includes 'avoid'; policy guidance does not",
         all("avoid" in MANAGER_ORIENTATION_GUIDANCE[o] for o in REQUIRED_ORIENTATIONS)
         and all("avoid" not in POLICY_ORIENTATION_GUIDANCE[o] for o in REQUIRED_ORIENTATIONS), "")
-    add("Ejemplos de demostración: referencias válidas según la matriz",
+    add("Demo examples: references valid under the matrix",
         all(ORIENTATION_TO_SUBTYPE.get((e["referencia"]["activity"], e["referencia"]["orientation"]))
             == e["referencia"]["subtype"] for e in DEMO_EXAMPLES), "")
-    add("Ejemplos de demostración cubren las 4 orientaciones",
+    add("Demo examples cover all 4 orientations",
         {e["referencia"]["orientation"] for e in DEMO_EXAMPLES} == REQUIRED_ORIENTATIONS, "")
-    add("Conversación de demostración: una referencia por orientación",
+    add("Demo conversation: one reference per orientation",
         {v["orientation"] for v in DEMO_CONVERSATION_REFERENCE.values()} == REQUIRED_ORIENTATIONS
         and len(DEMO_CONVERSATION_REFERENCE) == 4, "")
     ok, detail = check_obsolete_terms()
-    add("Sin términos obsoletos en el código", ok, detail)
+    add("No obsolete terms in the code", ok, detail)
     return tests
 
 
 def run_consistency_suite() -> dict:
-    """Chequeo de consistencia INTERNA contra los ejemplos del paper.
-    Los ejemplos también están en el prompt: no es validación empírica ni de confiabilidad entre codificadores."""
+    """INTERNAL consistency check against the paper examples. The examples are also in the prompt,
+    so this is not empirical validation or inter-coder reliability."""
     def run(ex):
         try:
             pred = analyze_comment(PF_EV, ex["comment"], ex["context"], ex["context_type"], False, True)
@@ -1602,12 +1593,12 @@ def run_consistency_suite() -> dict:
 if __name__ == "__main__":
     failed = 0
     for name, ok, detail in run_framework_validation():
-        print(f"[{'OK' if ok else 'FALLO'}] {name}" + (f" — {detail}" if detail else ""))
+        print(f"[{'OK' if ok else 'FAIL'}] {name}" + (f" — {detail}" if detail else ""))
         failed += 0 if ok else 1
     if "--consistencia" in sys.argv:
         report = run_consistency_suite()
-        print(f"\nConsistencia interna: {report['overall_agreement']:.0%} "
-              "(los ejemplos también están en el prompt; no es validación).")
+        print(f"\nInternal consistency: {report['overall_agreement']:.0%} "
+              "(the examples are also in the prompt; this is not validation).")
         for row in report["results"]:
             mark = "✔" if row["match"] else "✘"
             print(f"  {mark} {row['example']}: {row['predicted']} {row['error']}")
