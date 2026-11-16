@@ -33,8 +33,8 @@ from motor import (
     select_within_limit, _clean_enum,
 )
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("future_making_app")
+logger = __import__("logging").getLogger("future_making_app")
+__import__("logging").basicConfig(level="INFO")
 
 CTX_CODE = {label: code for label, code, _ in CONTEXT_TYPE_CHOICES}
 CTX_LABEL = {code: label for label, code, _ in CONTEXT_TYPE_CHOICES}
@@ -91,8 +91,8 @@ FRAGILITY_NOTE = "These are observable indicators, not a measure of fragility."
 
 TABLE_WE_SOURCE = (
     "Source: manuscript Web Appendix Tables WE1 (policymaking) and WE2 (managerial), which apply the "
-    "framework to AI-integrated healthcare. The actions are the authors'; the wording is adapted here "
-    "from patients to consumers, and the healthcare examples are not shown."
+    "framework to AI-integrated healthcare. The actions are adapted here from patients to consumers; "
+    "the healthcare examples are not shown."
 )
 
 PAIR_NOTE = (
@@ -113,11 +113,11 @@ LINK_BASIS_LABEL = {
 
 THREAD_LABEL = {
     LABELED_THREAD: "Pasted conversation (User N labels)",
-    ASSUMED_THREAD: "Pasted text with assumed links",
+    ASSUMED_THREAD: "Pasted text treated as one thread (assumed)",
 }
 
 LINK_CHOICE_DATA = "Use only the links in the data"
-LINK_CHOICE_ASSUMED = "Assume each comment replies to the one above it"
+LINK_CHOICE_ASSUMED = "Assume each comment replies to the one above it, within each thread"
 
 # ─────────────────────────────────────────
 # GUIDANCE FROM TABLES WE1 AND WE2 (adapted to consumers)
@@ -229,7 +229,8 @@ CONVERSATION_EXAMPLES = {
         "reference": DEMO_CONVERSATION_REFERENCE,
         "source_note": (
             "Forum exchange quoted in the manuscript. Reference labels are those the manuscript "
-            "assigns to each user. The order follows the User N labels."
+            "assigns to each user. The order follows the User N labels. This example is pending "
+            "replacement with the manuscript's confrontational negotiation thread."
         ),
     },
     "conv2": {
@@ -239,7 +240,7 @@ CONVERSATION_EXAMPLES = {
         "source_note": (
             "Social media thread from the manuscript's competing enactments example. The manuscript labels "
             "this thread by orientation only; the activity labels are a proposed coding that researchers "
-            "should check before use."
+            "should check before use. This example is pending replacement with the manuscript's text."
         ),
     },
 }
@@ -536,10 +537,11 @@ def _read_records(source, is_consult, uploaded, text):
     return records, msgs
 
 
-def _signature(pf, consult_q, is_consult, records):
+def _signature(pf, consult_q, is_consult, records, link_mode):
     payload = json.dumps({
         "pf": pf,
         "cq": consult_q if is_consult else "",
+        "link": link_mode,
         "recs": [(r["comment_id"], r["comment_text"], r["thread_id"], r.get("parent_comment_id"))
                  for r in records],
     }, ensure_ascii=False)
@@ -1085,8 +1087,8 @@ def tab_multiple():
             "How should comments be linked?",
             [LINK_CHOICE_DATA, LINK_CHOICE_ASSUMED],
             key="link_mode_multi",
-            help="Use the data's own reply links when they exist. The assumed option treats each "
-                 "comment as a reply to the one above it, and labels every such link as assumed.",
+            help="Use the data's own reply links when they exist. The assumed option links each comment to the "
+                 "one above it, within each thread. Every such link is labeled as assumed.",
         )
         link_mode = "assumed" if link_choice == LINK_CHOICE_ASSUMED else "data"
 
@@ -1111,10 +1113,12 @@ def tab_multiple():
         st.warning(f"{renamed} repeated identifier(s) were renamed so no comment is lost.")
 
     if link_mode == "assumed":
-        records = apply_assumed_adjacency(records)
+        # Pasted text and labeled conversations are a single thread by the user's choice.
+        # CSV rows keep their own thread_id values.
+        records = apply_assumed_adjacency(records, assume_one_thread=(source != SOURCE_CSV))
         st.warning(
             "Assumed links are not evidence of interaction. Each link created here is labeled as assumed "
-            "in the results."
+            "in the results. Links follow the order of the input, not the timestamps."
         )
         include_assumed = st.checkbox(
             "Include pairs with assumed links in the review section",
@@ -1137,7 +1141,7 @@ def tab_multiple():
             "Comment": r["comment_text"],
         } for r in selected]), hide_index=True)
 
-    signature = _signature(pf.strip(), consult_q.strip(), is_consult, selected)
+    signature = _signature(pf.strip(), consult_q.strip(), is_consult, selected, link_mode)
 
     if st.button("Analyze comments", type="primary", key="btn_multi", disabled=not consent):
         progress = st.progress(0, text="Starting analysis...")
@@ -1151,6 +1155,7 @@ def tab_multiple():
             st.error("An error occurred during the analysis. Check the server log.")
             return
         progress.empty()
+        prepare_records  # referenced for clarity; context is prepared before analysis
         st.session_state["multi"] = {
             "signature": signature,
             "results": results,
