@@ -48,6 +48,7 @@ ASSUMED_THREAD = "_assumed_thread_"     # pasted text treated as one thread, by 
 # Link basis. Every link carries one of these, so the app never presents an
 # assumed link as confirmed interaction.
 LINK_CONFIRMED = "confirmed_reply"      # the data (or a quote in the platform) states who replied to whom
+LINK_STATED = "stated_in_source"        # the source text describes the reply relation (not platform data)
 LINK_LABELED = "labeled_sequence"       # order given by "User N:" labels; not verified as replies
 LINK_ASSUMED = "assumed_adjacent"       # assigned by the tool, only if the user opts in
 LINK_NONE = "no_link"
@@ -149,10 +150,10 @@ You will always be given TWO separate fields:
 A. SCOPE AND DEGREE OF PRESCRIPTION OF INTERVENTIONS (background context)
 ====================================================================
 
-  FIXED (Narrow scope, Highly prescriptive)   -- e.g., a ban on a single product or material
+  FIXED (Narrow scope, Highly prescriptive)   -- e.g., a ban on a single-use product or material
   BOUNDED (Broad scope, Highly prescriptive)  -- e.g., ZEV policies and strategies
-  FLEXIBLE (Narrow scope, Lowly prescriptive) -- e.g., a voluntary behavioral guideline for one practice
-  OPEN (Broad scope, Lowly prescriptive)      -- e.g., a broad technological or societal shift with no single binding policy target
+  FLEXIBLE (Narrow scope, Lowly prescriptive) -- e.g., a voluntary behavioral guideline for one practice (e.g., meat-free Mondays)
+  OPEN (Broad scope, Lowly prescriptive)      -- e.g., technological or societal developments, often managerial or organizational, with high uncertainty and no predefined societal outcome (e.g., adoption of AI in healthcare)
 
 This typology contextualizes the prescribed future conceptually. It does
 NOT predetermine which orientations, activities, or future-making
@@ -292,33 +293,37 @@ between current practices and the prescribed future. Typical markers:
 
 --- AMBIVALENT --- Pragmatic narrative: desirability assessed against
 everyday feasibility (price, range, charging access, servicing,
-compatibility with routines). Goal: slow or stage change, delay
-decisions, balance risks and benefits. Emotions: curiosity, caution,
-anxiety, frustration, conditional optimism. Temporality: gradual and
-contingent. Notable condition of adoption: limited resources to support
-change. Typical markers: "but," "if," "when," "not yet," "hopefully,"
-"I'm willing to change my mind."
+compatibility with routines, battery performance, resale value). Goal:
+slow or stage movement toward the prescribed future, delay decisions,
+balance risks and benefits; no necessary opposition. Emotions: curiosity,
+caution, anxiety, frustration, conditional optimism. Temporality: gradual
+and contingent. Notable condition of adoption: limited resources to
+support change. Typical markers: "but," "if," "when," "not yet,"
+"hopefully," "I'm willing to change my mind."
 
 --- RESISTANT --- Control narrative: interventions framed as coercive,
-inequitable, ideologically motivated, or imposed by governments, elites,
-or corporations. Goal: contest the prescribed future, protect the status
-quo. Emotions: pessimism, anger, anxiety, fear, defiance, distrust.
-Temporality: maintenance-oriented -- the prescribed future is distant,
-implausible, or should be prevented. Notable condition of adoption: low
-degree of alignment between current practices and the prescribed future.
-Typical markers: "forced," "agenda," "control," "freedom," "never,"
-"stick with."
+inequitable, ideologically motivated, environmentally misleading, or
+imposed by governments, elites, or corporations. Goal: contest the
+prescribed future, protect the status quo. Emotions: pessimism, anger,
+anxiety, fear, defiance, distrust. Temporality: maintenance-oriented --
+the prescribed future is distant, implausible, or should be prevented.
+Notable condition of adoption: low degree of alignment between current
+practices and the prescribed future. Typical markers: "forced,"
+"agenda," "control," "freedom," "never," "stick with."
 
 --- EXPANDER --- Bigger-picture narrative: the intervention is situated
-within wider systems of production, consumption, urban design, and
-resource extraction; the question shifts from "how can X change?" to "how
-should the whole system be reorganized?" Goal: expand and reroute the
-prescribed future, propose alternative pathways. Emotions: dystopian
-optimism, concern, hope, critical urgency. Temporality: envisioned and
+within wider systems of production, consumption, urban design, inequality,
+resource extraction, and car dependence; the question shifts from "how can
+X change?" to "how should the whole system be reorganized?" Goal: expand
+and reroute the prescribed future toward alternative trajectories (reduced
+car dependence, public transport, active travel, shared mobility, urban
+redesign, repair, longevity, or degrowth). Emotions: dystopian optimism,
+concern, hope, critical urgency. Temporality: envisioned and
 system-oriented -- change will be broader than prescribed. Notable
 condition of adoption: mismatch among current practices, normative
 practices, and those directed by the prescribed future. Typical
-formulations: "not enough," "bigger picture," "does it have to be a car?"
+formulations: "not enough," "bigger picture," "less cars," "does it have
+to be a car?"
 
 Determine orientation from the FULL CONFIGURATION of narrative, goal,
 emotion, temporality, relationship to the prescribed future, and
@@ -377,16 +382,6 @@ be WORLD LEADERS in solar and battery manufacturing. Why are we not using
 our own minerals to make batteries for EVs on a global scale??"
 -> NEGOTIATION / ADVOCATE / CATALYZER.
 
-Example (CATALYZER, Negotiation/Advocate, mostly technical content --
-functional dominance over volume) -- forum exchange, User 1:
-"EVs will be on an exponential adoption curve. Everyone will want one...
-Governments are going to start making fossil fuels very expensive... Or
-are you advocating that we go back to bicycles and horses, or maybe just
-buses?"
--> The technical predictions are mobilized as rhetorical support for
-advocacy against an implied alternative: NEGOTIATION / ADVOCATE /
-CATALYZER.
-
 Example (CATALYZER, Enactment/Accelerate) -- Facebook group (Johnny):
 "Toyota is still very much trying to slow down the transition to EVs. We
 have ordered two Teslas that will be delivered hopefully this year. We are
@@ -412,11 +407,10 @@ Example (RESISTANT, Negotiation/Reject) -- online video comment (Raj):
 we can have."
 -> NEGOTIATION / REJECT / RESISTANT.
 
-Example (RESISTANT, Negotiation/Reject, contains evaluation of costs --
-functional dominance over volume) -- forum exchange, User 3:
-"Nope, I'm not confused, thanks for the concern though... Technology
-adoption curves typically look like bell curves... This is delusional."
--> NEGOTIATION / REJECT / RESISTANT.
+Example (RESISTANT, Enactment/Prevent) -- news media comment (StarT):
+"I for one WILL NOT be forced into an elec vehicle and spend half my
+travel time charging the damn thing to go to hell."
+-> ENACTMENT / PREVENT / RESISTANT.
 
 Example (EXPANDER, Evaluation/Complexify) -- interview (Peter):
 "The embodied carbon in a new vehicle... is more than the emissions that
@@ -433,11 +427,6 @@ social media (Dan):
 orientated urban environments, where cars are a secondary transport
 really only for those who really need it."
 -> NEGOTIATION / CONTEST / EXPANDER.
-
-Example (RESISTANT, Enactment/Prevent) -- news media comment (StarT):
-"I for one WILL NOT be forced into an elec vehicle and spend half my
-travel time charging the damn thing to go to hell."
--> ENACTMENT / PREVENT / RESISTANT.
 
 Example (EXPANDER, Enactment/Reroute) -- public consultation (Phillip):
 "I uprooted my life and moved from the Sunshine Coast to Melbourne with
@@ -510,28 +499,28 @@ OUTPUT FORMAT -- Return ONLY valid JSON
 ORIENTATIONS = {
     "CATALYZER": {
         "color": "#27AE60", "bg": "#EAFAF1",
-        "goal": "Accelerate change toward the prescribed future",
+        "goal": "Accelerate change toward the prescribed future (faster change)",
         "narrative": "Urgency Narrative",
         "temporality": "The future is close: change is happening now",
         "activities": "Simplify - Advocate - Accelerate",
     },
     "AMBIVALENT": {
         "color": "#D68910", "bg": "#FEFDE7",
-        "goal": "Slow the pace of change, delay decisions, balance risks and benefits",
+        "goal": "Slow down change toward the prescribed future, delay decisions, balance risks and benefits (slower change)",
         "narrative": "Pragmatic Narrative",
         "temporality": "The future is contingent: change is uncertain",
         "activities": "Stall - Question - Delay",
     },
     "RESISTANT": {
         "color": "#C0392B", "bg": "#FDEDEC",
-        "goal": "Contest the prescribed future and protect the status quo",
+        "goal": "Contest the prescribed future, protect the status quo (no change)",
         "narrative": "Control Narrative",
         "temporality": "The future is distant: no change",
         "activities": "Avoid - Reject - Prevent",
     },
     "EXPANDER": {
         "color": "#7D3C98", "bg": "#F4ECF7",
-        "goal": "Expand the prescribed future and propose alternative pathways",
+        "goal": "Expand the prescribed future, propose new trajectories and alternative futures (broader change)",
         "narrative": "Bigger Picture Narrative",
         "temporality": "The future is distant: the change must be broader",
         "activities": "Complexify - Contest - Reroute",
@@ -572,26 +561,26 @@ CHALLENGE_DEFINITIONS = {
     "CONFRONTATIONAL_NEGOTIATIONS": {
         "label": "Confrontational Negotiations", "activity": "NEGOTIATION",
         "definition": (
-            "Arise as consumers negotiate their preferred futures. When they simultaneously advocate "
-            "for, question, reject, or contest the prescribed future in relation to others, "
-            "negotiations become confrontational."
+            "Arise as consumers negotiate their preferred futures without conceding to alternative ones. "
+            "When they simultaneously advocate for, question, reject, or contest the prescribed future in "
+            "relation to others, negotiations become confrontational."
         ),
     },
     "COMPETING_ENACTMENTS": {
         "label": "Competing Enactments", "activity": "ENACTMENT",
         "definition": (
-            "Arise as consumers enact different preferred futures through their current practices. "
-            "When they accelerate, delay, prevent, or re-route the prescribed future through present "
-            "practices, enactments become competitive."
+            "Arise as consumers enact different preferred futures through their current practices. Earlier "
+            "adoption can coexist with delayed substitution, preserved practices, and efforts to redirect "
+            "change, and these enactments contend to shape the future in different ways."
         ),
     },
 }
 
 FRAGILE_FUTURES_DEFINITION = (
     "Fragile futures: multiple, volatile, and conflicting preferred futures that may interfere with "
-    "the actualization of the prescribed future. It is a qualitative theoretical condition produced "
-    "when differently oriented performances interfere with one another. It is NOT a score, a "
-    "probability, or a classification of a single comment."
+    "the actualization of the prescribed future. In the manuscript this is a conditional theoretical "
+    "account: the three future-making challenges can create conditions under which the prescribed "
+    "future is fragile. It is NOT a score, a probability, or a classification of a single comment."
 )
 
 # ═══════════════════════════════════════════════════════════════
@@ -667,6 +656,14 @@ STEP2_ORIENTATION_LENS = {
     "AMBIVALENT": "This orientation sees the prescribed future as valuable, but conditions are not yet ready.",
     "RESISTANT": "This orientation sees the prescribed future as a threat to autonomy, identity, or rights.",
     "EXPANDER": "This orientation sees the prescribed future as framed too narrowly.",
+}
+
+# Preferred future for each orientation, from Figure 1 of the manuscript.
+PREFERRED_FUTURE = {
+    "CATALYZER": "Faster change toward the prescribed future.",
+    "AMBIVALENT": "Slower change toward the prescribed future.",
+    "RESISTANT": "No change: the status quo is preserved.",
+    "EXPANDER": "Broader change: alternative trajectories beyond the prescribed future.",
 }
 
 # Step 3 diagnostic questions. The two roadmaps use different wording on purpose.
@@ -752,7 +749,10 @@ MANAGER_ORIENTATION_GUIDANCE = {
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["CATALYZER"]["monitor"],
         "objective": "Use their experience to normalize the change and bring other consumers along.",
-        "avoid": None,  # Web Appendix Table WE2 is handled in app.py; the interface hides this line when empty.
+        "avoid": (
+            "Presenting their experiences as representative or as evidence that adoption is inevitable; "
+            "treating early uptake as a reason to frame wider adoption as inevitable."
+        ),
     },
     "AMBIVALENT": {
         "lens": POLICY_ORIENTATION_GUIDANCE["AMBIVALENT"]["lens"],
@@ -763,7 +763,10 @@ MANAGER_ORIENTATION_GUIDANCE = {
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["AMBIVALENT"]["monitor"],
         "objective": "Address the specific conditions these consumers name, and avoid rushing their decisions.",
-        "avoid": None,
+        "avoid": (
+            "Pressure, artificial urgency, and framing hesitation as ignorance; treating hesitation as "
+            "generalized opposition."
+        ),
     },
     "RESISTANT": {
         "lens": POLICY_ORIENTATION_GUIDANCE["RESISTANT"]["lens"],
@@ -774,7 +777,9 @@ MANAGER_ORIENTATION_GUIDANCE = {
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["RESISTANT"]["monitor"],
         "objective": "Understand the reasons for pushback and make sure messaging does not alienate these consumers.",
-        "avoid": None,
+        "avoid": (
+            "\"There is no alternative\"; ridicule; hidden automation of decisions; coercive or one-way messaging."
+        ),
     },
     "EXPANDER": {
         "lens": POLICY_ORIENTATION_GUIDANCE["EXPANDER"]["lens"],
@@ -785,7 +790,10 @@ MANAGER_ORIENTATION_GUIDANCE = {
         ),
         "monitor": POLICY_ORIENTATION_GUIDANCE["EXPANDER"]["monitor"],
         "objective": "Consider the systemic issues these consumers raise and identify complementary or alternative pathways.",
-        "avoid": None,
+        "avoid": (
+            "Presenting the offer as a complete solution; dismissing systemic critique as outside the "
+            "organization's responsibility."
+        ),
     },
 }
 
@@ -1306,8 +1314,8 @@ def build_comment_records_from_consultation(text: str) -> list:
 # ─────────────────────────────────────────
 def apply_assumed_adjacency(records: list, assume_one_thread: bool = False) -> list:
     """Opt-in. Within each thread, links each comment without a parent to the comment directly above it
-    in the file order. Every link created here is marked LINK_ASSUMED. Confirmed and labeled links are
-    never changed.
+    in the file order. Every link created here is marked LINK_ASSUMED. Confirmed, stated, and labeled
+    links are never changed.
 
     assume_one_thread=True treats all comments without a thread as one pasted thread. Use it only when
     the user has chosen the assumed option for pasted text. The file order is the only evidence for these links."""
@@ -1325,7 +1333,7 @@ def apply_assumed_adjacency(records: list, assume_one_thread: bool = False) -> l
             continue  # comments with no thread stay unlinked
         for i in range(1, len(group)):
             cur, prev = group[i], group[i - 1]
-            if cur.get("parent_comment_id") or cur.get("link_source") in (LINK_CONFIRMED, LINK_LABELED):
+            if cur.get("parent_comment_id") or cur.get("link_source") in (LINK_CONFIRMED, LINK_STATED, LINK_LABELED):
                 continue
             cur["parent_comment_id"] = prev["comment_id"]
             cur["link_source"] = LINK_ASSUMED
@@ -1520,7 +1528,7 @@ def orientation_coexistence(results: list) -> dict:
 
 
 def orientations_by_thread(results: list) -> dict:
-    """For real threads (labeled, confirmed, or assumed) with at least two comments."""
+    """For real threads (labeled, confirmed, stated, or assumed) with at least two comments."""
     table = {}
     for r in results:
         tid = r.get("_thread_id", DEFAULT_THREAD)
@@ -1672,9 +1680,11 @@ def run_framework_validation() -> list:
     add("Orientation guidance complete in both roadmaps",
         all(o in POLICY_ORIENTATION_GUIDANCE and o in MANAGER_ORIENTATION_GUIDANCE
             for o in REQUIRED_ORIENTATIONS), "")
-    add("Managerial guidance has an 'avoid' key; policy guidance does not",
-        all("avoid" in MANAGER_ORIENTATION_GUIDANCE[o] for o in REQUIRED_ORIENTATIONS)
+    add("Managerial guidance has an 'avoid' value for every orientation; policy guidance does not",
+        all(MANAGER_ORIENTATION_GUIDANCE[o].get("avoid") for o in REQUIRED_ORIENTATIONS)
         and all("avoid" not in POLICY_ORIENTATION_GUIDANCE[o] for o in REQUIRED_ORIENTATIONS), "")
+    add("Preferred future defined for every orientation (Figure 1)",
+        set(PREFERRED_FUTURE) == REQUIRED_ORIENTATIONS, "")
     add("Demo examples: references valid under the matrix",
         all(ORIENTATION_TO_SUBTYPE.get((e["referencia"]["activity"], e["referencia"]["orientation"]))
             == e["referencia"]["subtype"] for e in DEMO_EXAMPLES), "")
