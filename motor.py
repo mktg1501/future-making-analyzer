@@ -43,11 +43,11 @@ ORIENTATION_ORDER = ["CATALYZER", "AMBIVALENT", "RESISTANT", "EXPANDER"]
 # Thread identifiers
 DEFAULT_THREAD = "_default_thread_"     # comments with no known thread
 LABELED_THREAD = "_labeled_exchange_1"  # conversation with "User N:" labels
-ASSUMED_THREAD = "_assumed_thread_"     # pasted text linked by an opt-in assumption
+ASSUMED_THREAD = "_assumed_thread_"     # pasted text treated as one thread, by user choice
 
 # Link basis. Every link carries one of these, so the app never presents an
 # assumed link as confirmed interaction.
-LINK_CONFIRMED = "confirmed_reply"      # the data states who replied to whom
+LINK_CONFIRMED = "confirmed_reply"      # the data (or a quote in the platform) states who replied to whom
 LINK_LABELED = "labeled_sequence"       # order given by "User N:" labels; not verified as replies
 LINK_ASSUMED = "assumed_adjacent"       # assigned by the tool, only if the user opts in
 LINK_NONE = "no_link"
@@ -595,65 +595,71 @@ FRAGILE_FUTURES_DEFINITION = (
 )
 
 # ═══════════════════════════════════════════════════════════════
-# ROADMAP CONTENT (wording follows the manuscript's Discussion, Table 2, and the
-# description of Figures 3 and 4). Actions from Web Appendix Tables WE1 and WE2 are
-# adapted in app.py.
+# ROADMAP CONTENT
+# Step titles and general implications follow Table WE1 (policymaking) and Table WE2 (managerial).
+# Application-specific actions from those tables are adapted in app.py.
 # ═══════════════════════════════════════════════════════════════
 EXPECTED_POLICY_STEP_TITLES = [
     "Determine the prescribed future",
-    "Monitor initial responses and map future-making orientations",
-    "Diagnose future-making challenges",
-    "Determine and adjust support measures aligned with orientations",
-    "Support consumers' enactment of present practices",
-    "Measure progress of the intervention",
-    "Continuously revise the intervention",
+    "Conduct social listening to map future-making orientations",
+    "Diagnose and monitor key future-making challenges in evidence from social listening",
+    "Implement support initiatives",
+    "Facilitate enactment",
+    "Measure multiple outcomes",
+    "Revise intervention",
 ]
 
 EXPECTED_MANAGER_STEP_TITLES = [
     "Determine the prescribed future",
-    "Monitor initial responses and map future-making orientations",
-    "Diagnose future-making challenges",
-    "Select orientation-sensitive support strategies",
-    "Select messaging strategies",
-    "Support consumers at multiple touchpoints",
+    "Conduct social listening to consider future-making orientations",
+    "Diagnose and monitor key future-making challenges in evidence from social listening",
+    "Select an orientation-sensitive response",
+    "Match messaging to key future-making challenges",
+    "Support consumers through enactment",
 ]
 
 POLICY_ROADMAP_STEPS = [
     ("1", EXPECTED_POLICY_STEP_TITLES[0],
-     "Determine the future prescribed by the intervention and what it means for existing consumer practices."),
+     "Define the future the intervention prescribes and the practice changes on which its public value depends."),
     ("2", EXPECTED_POLICY_STEP_TITLES[1],
-     "Monitor the initial responses, for example on social media and in public consultations, and map which "
-     "orientations appear. Orientations are patterns of performing future-making, not segments."),
+     "Identify how consumers currently evaluate, negotiate, and enact their preferred futures. Orientations "
+     "are patterns of performance, not segments."),
     ("3", EXPECTED_POLICY_STEP_TITLES[2],
-     "Diagnose the future-making challenges that emerge when orientations interact: convoluted evaluations, "
-     "confrontational negotiations, and competing enactments."),
+     "Diagnose challenges within and across practices. Treat evaluation, negotiation, and enactment as "
+     "interdependent rather than sequential."),
     ("4", EXPECTED_POLICY_STEP_TITLES[3],
-     "Determine support measures aligned with the orientations present, then monitor and adjust them."),
+     "Match support to the orientations present and to the challenges they generate. The objective is "
+     "responsible acceleration, not uniform acceleration."),
     ("5", EXPECTED_POLICY_STEP_TITLES[4],
-     "Support consumers' enactment of present practices by providing the infrastructure and capabilities they "
-     "need to navigate the change, responding to what the diagnostic steps show."),
+     "Provide the infrastructures and capabilities needed to reconfigure practices. Formal authorization "
+     "does not ensure that people can enact the change safely and equitably."),
     ("6", EXPECTED_POLICY_STEP_TITLES[5],
-     "Measure how the intervention is progressing."),
+     "Assess whether the intervention is accurate, fair, understandable, legitimate, and compatible with "
+     "alternative pathways. Adoption alone does not show that the prescribed future is stabilizing."),
     ("7", EXPECTED_POLICY_STEP_TITLES[6],
-     "Revise the intervention continuously and provide more support as needed."),
+     "Treat the policy response and the prescribed future as revisable, using evidence on future-making "
+     "to adjust support, timing, requirements, or scope."),
 ]
 
 MANAGER_ROADMAP_STEPS = [
     ("1", EXPECTED_MANAGER_STEP_TITLES[0],
-     "Identify the future prescribed by the intervention and the practices it asks consumers to change."),
+     "Define the broadly prescribed future, then specify what each offer asks consumers to enact, including "
+     "the practices, competences, and resources that must change."),
     ("2", EXPECTED_MANAGER_STEP_TITLES[1],
-     "Monitor how consumers respond to the intervention, for the purpose of supporting them through the change."),
+     "Use orientations as a diagnostic lens, located at specific offers and touchpoints rather than fixed "
+     "market segments."),
     ("3", EXPECTED_MANAGER_STEP_TITLES[2],
-     "Diagnose how consumers are responding and which future-making challenges are emerging."),
+     "Identify which future-making challenge a pattern indicates, rather than treating every divergence as "
+     "generic resistance. Map the three activities as interdependent."),
     ("4", EXPECTED_MANAGER_STEP_TITLES[3],
-     "Select support strategies sensitive to the orientations present. Web Appendix Table WE2 lists actions "
-     "to avoid when developing support mechanisms."),
+     "Choose responses by orientation and challenge, and check whether a response to one orientation intensifies "
+     "a challenge elsewhere."),
     ("5", EXPECTED_MANAGER_STEP_TITLES[4],
-     "Select messaging strategies that keep consumers informed of the required change, its benefits, and the "
-     "support available. Frame messages so that one orientation is not mobilized while others are alienated."),
+     "Use messaging that facilitates sensemaking. Communicate achievements alongside uncertainty, trade-offs, "
+     "and limitations. Avoid a single persuasive frame and inevitability claims."),
     ("6", EXPECTED_MANAGER_STEP_TITLES[5],
-     "Support consumers at multiple touchpoints along their journey with the organization, so that they have a "
-     "positive experience on the pathway toward the preferred future."),
+     "Place support at the points where consumers must adjust practice, with adjustable involvement, visible "
+     "human assistance, and easy ways to pause, reverse, or modify adoption."),
 ]
 
 STEP2_ORIENTATION_LENS = {
@@ -1295,22 +1301,63 @@ def build_comment_records_from_consultation(text: str) -> list:
     } for i, item in enumerate(extract_public_consultation_responses(text))]
 
 
-def apply_assumed_adjacency(records: list) -> list:
-    """Opt-in. Treats each comment as a reply to the one above it, but only for comments that
-    have no thread and no parent. Every link it creates is marked LINK_ASSUMED.
-    Existing confirmed or labeled links are never changed."""
-    for i in range(1, len(records)):
-        cur, prev = records[i], records[i - 1]
-        if cur.get("parent_comment_id") or cur["thread_id"] != DEFAULT_THREAD:
-            continue
-        if prev["thread_id"] not in (DEFAULT_THREAD, ASSUMED_THREAD):
-            continue
-        if prev["thread_id"] == DEFAULT_THREAD:
-            prev["thread_id"] = ASSUMED_THREAD
-        cur["thread_id"] = ASSUMED_THREAD
-        cur["parent_comment_id"] = prev["comment_id"]
-        cur["link_source"] = LINK_ASSUMED
+# ─────────────────────────────────────────
+# LINKS
+# ─────────────────────────────────────────
+def apply_assumed_adjacency(records: list, assume_one_thread: bool = False) -> list:
+    """Opt-in. Within each thread, links each comment without a parent to the comment directly above it
+    in the file order. Every link created here is marked LINK_ASSUMED. Confirmed and labeled links are
+    never changed.
+
+    assume_one_thread=True treats all comments without a thread as one pasted thread. Use it only when
+    the user has chosen the assumed option for pasted text. The file order is the only evidence for these links."""
+    if assume_one_thread:
+        for r in records:
+            if r["thread_id"] == DEFAULT_THREAD:
+                r["thread_id"] = ASSUMED_THREAD
+
+    groups = {}
+    for r in records:
+        groups.setdefault(r["thread_id"], []).append(r)
+
+    for tid, group in groups.items():
+        if tid == DEFAULT_THREAD:
+            continue  # comments with no thread stay unlinked
+        for i in range(1, len(group)):
+            cur, prev = group[i], group[i - 1]
+            if cur.get("parent_comment_id") or cur.get("link_source") in (LINK_CONFIRMED, LINK_LABELED):
+                continue
+            cur["parent_comment_id"] = prev["comment_id"]
+            cur["link_source"] = LINK_ASSUMED
     return records
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"\s+", " ", str(text or "")).strip().lower()
+
+
+def link_by_quote(posts: list) -> list:
+    """For forum exports. Each post is a dict with: comment_id, author, timestamp (sortable string),
+    text (with any quoted block removed), quoted_author, quoted_text.
+
+    Orders posts by timestamp, drops exact repeats, and links a post to an earlier post only when
+    the post quotes that post (author and quoted text both match). Position in the file is never used.
+    Unmatched quotes stay unlinked."""
+    posts = sorted(posts, key=lambda p: str(p.get("timestamp", "")))
+    kept = []
+    for p in posts:
+        if any(_norm(q["text"]) == _norm(p["text"]) for q in kept):
+            continue  # repeated post or repeated quote
+        p["parent_comment_id"], p["link_source"] = None, LINK_NONE
+        qa, qt = p.get("quoted_author"), p.get("quoted_text")
+        if qa and qt:
+            for q in reversed(kept):  # most recent matching post first
+                if q.get("author") == qa and _norm(qt) in _norm(q["text"]):
+                    p["parent_comment_id"] = q["comment_id"]
+                    p["link_source"] = LINK_CONFIRMED
+                    break
+        kept.append(p)
+    return kept
 
 
 def ensure_unique_ids(records: list) -> int:
@@ -1546,7 +1593,7 @@ def check_obsolete_terms():
 
 
 def _assumed_link_selftest() -> bool:
-    """Checks that assumed links are hidden by default and shown only when requested."""
+    """Assumed links are hidden by default and shown only when requested."""
     fake = [
         {"_comment_id": "a", "_parent_comment_id": None, "_link_source": LINK_NONE,
          "_comment_text": "x", "main_activity": "NEGOTIATION", "main_orientation": "CATALYZER",
@@ -1558,6 +1605,40 @@ def _assumed_link_selftest() -> bool:
     hidden = sum(len(v) for v in compute_challenge_review_candidates(fake).values())
     shown = sum(len(v) for v in compute_challenge_review_candidates(fake, include_assumed=True).values())
     return hidden == 0 and shown == 1
+
+
+def _assumed_thread_selftest() -> bool:
+    """Assumed links are created only within a thread, and confirmed links are never overwritten."""
+    recs = [
+        {"comment_id": "a", "thread_id": "t1", "parent_comment_id": None, "link_source": LINK_NONE},
+        {"comment_id": "b", "thread_id": "t1", "parent_comment_id": None, "link_source": LINK_NONE},
+        {"comment_id": "c", "thread_id": "t2", "parent_comment_id": None, "link_source": LINK_NONE},
+        {"comment_id": "d", "thread_id": "t2", "parent_comment_id": "zz", "link_source": LINK_CONFIRMED},
+    ]
+    apply_assumed_adjacency(recs)
+    by = {r["comment_id"]: r for r in recs}
+    return (by["b"]["parent_comment_id"] == "a" and by["b"]["link_source"] == LINK_ASSUMED
+            and by["c"]["parent_comment_id"] is None
+            and by["d"]["parent_comment_id"] == "zz" and by["d"]["link_source"] == LINK_CONFIRMED)
+
+
+def _quote_link_selftest() -> bool:
+    """Quote-based links are created only when a post quotes an earlier post; order follows timestamps."""
+    posts = [
+        {"comment_id": "p3", "author": "B", "timestamp": "2019-04-08T10:00", "text": "I agree.",
+         "quoted_author": "A", "quoted_text": "Nobody will want ICE."},
+        {"comment_id": "p1", "author": "A", "timestamp": "2019-04-07T09:00", "text": "Nobody will want ICE.",
+         "quoted_author": "", "quoted_text": ""},
+        {"comment_id": "p2", "author": "C", "timestamp": "2019-04-08T09:00", "text": "Unrelated remark.",
+         "quoted_author": "", "quoted_text": ""},
+        {"comment_id": "p4", "author": "A", "timestamp": "2019-04-08T11:00", "text": "Nobody will want ICE.",
+         "quoted_author": "", "quoted_text": ""},
+    ]
+    out = {p["comment_id"]: p for p in link_by_quote(posts)}
+    return (out.get("p3", {}).get("parent_comment_id") == "p1"
+            and out.get("p3", {}).get("link_source") == LINK_CONFIRMED
+            and out.get("p2", {}).get("link_source") == LINK_NONE
+            and "p4" not in out)
 
 
 def run_framework_validation() -> list:
@@ -1605,6 +1686,10 @@ def run_framework_validation() -> list:
         and len(DEMO_CONVERSATION_REFERENCE) == 4, "")
     add("Assumed links are hidden by default and shown only when requested",
         _assumed_link_selftest(), "")
+    add("Assumed links stay within a thread; confirmed links are never overwritten",
+        _assumed_thread_selftest(), "")
+    add("Quote-based links: only when a post quotes an earlier post; timestamp order",
+        _quote_link_selftest(), "")
     ok, detail = check_obsolete_terms()
     add("No obsolete terms in the code", ok, detail)
     return tests
