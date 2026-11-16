@@ -20,11 +20,11 @@ st.set_page_config(
 
 from motor import (
     ASSUMED_THREAD, CHALLENGE_DEFINITIONS, CONTEXT_TYPE_CHOICES, DEMO_BY_ID,
-    DEMO_CONVERSATION, DEMO_CONVERSATION_REFERENCE, HOMEPAGE_DESCRIPTION,
-    INTERPRETIVE_USE_NOTE, LABELED_THREAD, LINK_ASSUMED, LINK_CONFIRMED, LINK_LABELED,
-    LINK_NONE, MANAGER_ORIENTATION_GUIDANCE, MANAGER_ROADMAP_STEPS, MAX_COMMENTS,
-    ORIENTATION_ORDER, ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV,
-    POLICY_ORIENTATION_GUIDANCE, POLICY_ROADMAP_STEPS, analyze_comment, analyze_document,
+    DEMO_CONVERSATION_REFERENCE, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE,
+    LABELED_THREAD, LINK_ASSUMED, LINK_CONFIRMED, LINK_LABELED, LINK_NONE, LINK_STATED,
+    MANAGER_ORIENTATION_GUIDANCE, MANAGER_ROADMAP_STEPS, MAX_COMMENTS, ORIENTATION_ORDER,
+    ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV, POLICY_ORIENTATION_GUIDANCE,
+    POLICY_ROADMAP_STEPS, PREFERRED_FUTURE, analyze_comment, analyze_document,
     apply_assumed_adjacency, build_comment_records_from_consultation,
     build_comment_records_from_csv, build_comment_records_from_paragraphs,
     build_comment_records_from_user_labels, compute_challenge_review_candidates,
@@ -45,7 +45,6 @@ ORI_LABEL = {o: o.title() for o in ORIENTATION_ORDER}
 # ─────────────────────────────────────────
 # WORDING
 # Orientations are always described as "consumers with a ... orientation".
-# Applied to all guidance and model text before display.
 # ─────────────────────────────────────────
 _ORIENTATION_PATTERN = re.compile(
     r"\b(resistant|catalyzer|ambivalent|expander)(?:s|\s+consumers?)\b", re.IGNORECASE
@@ -64,7 +63,7 @@ def _neutral(text) -> str:
 
 
 EXAMPLE_NOTE = (
-    "These examples show how the tool works. The same comments are included in the model's "
+    "These examples show how the tool works. Some of the same comments are included in the model's "
     "instructions, so they do not measure the tool's accuracy."
 )
 
@@ -87,25 +86,31 @@ ROADMAP_STATUS = {
     "input": "Defined by you",
 }
 
-FRAGILITY_NOTE = "These are observable indicators, not a measure of fragility."
+FRAGILITY_NOTE = (
+    "These are observable indicators. The manuscript treats fragile futures as a conditional account: "
+    "the three challenges can create conditions under which the prescribed future is fragile. These "
+    "indicators do not measure fragility."
+)
 
 TABLE_WE_SOURCE = (
-    "Source: manuscript Web Appendix Tables WE1 (policymaking) and WE2 (managerial), which apply the "
-    "framework to AI-integrated healthcare. The actions are adapted here from patients to consumers; "
-    "the healthcare examples are not shown."
+    "Source: manuscript Web Appendix E, Tables WE1 (policymaking) and WE2 (managerial), which apply the "
+    "roadmap to AI-integrated healthcare. This tool adapts the general steps and cautions to EV consumers; "
+    "the healthcare cases themselves are not used."
 )
 
 PAIR_NOTE = (
     "Each pair is linked, shares an activity, and differs in orientation or subtype. A pair is a lead "
-    "for review, not evidence that a challenge occurred. Links are shown with their basis: confirmed "
-    "in the data, given by the order of User N labels, or assumed by the tool. Pairs with assumed links "
-    "are hidden unless you include them."
+    "for review, not evidence that a challenge occurred. The tool flags differences in performance; it "
+    "cannot detect personal challenges to a speaker's credibility, which the manuscript's Findings also "
+    "describe. Links are shown with their basis: confirmed in the data, stated in the source, given by the "
+    "order of User N labels, or assumed by the tool. Pairs with assumed links are hidden unless you include them."
 )
 
 DECISION_OPTIONS = ["Not reviewed", "Shows the challenge", "Does not show it", "Unsure"]
 
 LINK_BASIS_LABEL = {
     LINK_CONFIRMED: "Confirmed in the data",
+    LINK_STATED: "Stated in the source's description (not platform data)",
     LINK_LABELED: "Order given by the User N labels (not verified as replies)",
     LINK_ASSUMED: "Assumed by the tool",
     LINK_NONE: "No link",
@@ -207,6 +212,10 @@ WE_MANAGER_STEP_ACTIONS = {
 # ─────────────────────────────────────────
 SINGLE_EXAMPLE_IDS = ["joe", "clara"]
 
+# Example 1: forum exchange labeled by the tool (not in the manuscript).
+CONV1_TEXT = None  # placeholder; see DEMO_CONVERSATION_REFERENCE in motor.py
+
+# Example 2: manuscript's competing enactments thread, as quoted in the manuscript's text.
 CONV2_TEXT = """User 1: I bought my EV because it was faster than the comparable ICE car, more spacious, has better range... at least $600 cheaper per quarter on "fuel," requires almost no maintenance or servicing... and gets regular improvements via software updates. It's the most brutally fast and best handling car I ever had!
 
 User 2: In the building where I live there are 150 underground carparks. All full. There is no reserve capacity in the building to install charging points for 1% of that. Nor any in the feed from the street, nor any in the feed to the suburb... I have no objection to eventually driving an EV, but it's just not happening any time soon. The infrastructure is decades away.
@@ -225,12 +234,28 @@ CONV2_REFERENCE = {
 CONVERSATION_EXAMPLES = {
     "conv1": {
         "label": "Example 1: forum exchange on the adoption curve (4 users)",
-        "text": DEMO_CONVERSATION,
+        "text": (
+            "User 1: EVs will be on an exponential adoption curve. Everyone will want one... Nobody will want an "
+            "expensive 2nd hand ICE... Globally, governments are going to start making fossil fuels very expensive. "
+            "T-A-X-E-S will be levied on this foul, polluting rubbish we are all burning today... Or are you advocating "
+            "that we go back to bicycles and horses, or maybe just buses?\n\n"
+            "User 2: Better tell that to the Prius owners replacing their batteries. My car is now 13 years old... "
+            "Batteries wear over time... so what magic bullet have you discovered that defies physics...? Once someone "
+            "like me can get a used EV for <$10k, and have the battery replaced cheaply, then I'll agree with you... "
+            "I'm not anti EV, I'm just realistic about costs and time frames.\n\n"
+            "User 3: Nope, I'm not confused, thanks for the concern though... If he bought an ICE car now, he will get "
+            "6-10 years use out of it and sell it for scrap value and registration. Not even close to the financial ruin "
+            "you are trying to peddle... Technology adoption curves typically look like bell curves... not what you are "
+            "suggesting... This is delusional.\n\n"
+            "User 4: I fully get what you're saying, it's not rocket science, but that's not what I'm on about... I simply "
+            "object to being told I'm an idiot... I'd like to see passenger cars filled with passengers, less cars on the "
+            "road, less money spent on new roads!... Where people may simply drive less."
+        ),
         "reference": DEMO_CONVERSATION_REFERENCE,
         "source_note": (
-            "Forum exchange quoted in the manuscript. Reference labels are those the manuscript "
-            "assigns to each user. The order follows the User N labels. This example is pending "
-            "replacement with the manuscript's confrontational negotiation thread."
+            "Forum exchange from the Whirlpool archive, labeled User 1 to User 4 by the developers. It is not "
+            "quoted in the manuscript, so its reference labels are ours, not the authors'. Replace it with the "
+            "manuscript's confrontational negotiation thread when the full text is available."
         ),
     },
     "conv2": {
@@ -238,38 +263,38 @@ CONVERSATION_EXAMPLES = {
         "text": CONV2_TEXT,
         "reference": CONV2_REFERENCE,
         "source_note": (
-            "Social media thread from the manuscript's competing enactments example. The manuscript labels "
-            "this thread by orientation only; the activity labels are a proposed coding that researchers "
-            "should check before use. This example is pending replacement with the manuscript's text."
+            "Thread illustrating competing enactments. The manuscript labels some users by orientation and "
+            "describes some enactments; the activity subtypes are a proposed coding that researchers should "
+            "check before use. Replace it with the complete manuscript text when available."
         ),
     },
 }
 CONVERSATION_BY_LABEL = {v["label"]: v for v in CONVERSATION_EXAMPLES.values()}
 
-# Manuscript Table 2: orientation definitions.
+# Manuscript Table 2: orientation definitions (wording as in the latest manuscript).
 TABLE2 = {
     "CATALYZER": {
         "narrative": "Urgency narrative",
-        "goal": "Accelerate change toward the prescribed future",
-        "temporality": "The future is close (change is happening now)",
+        "goal": "Accelerate change toward the prescribed future (faster change)",
+        "temporality": "The future is close",
         "condition": "High degree of alignment between current practices and the prescribed future",
     },
     "AMBIVALENT": {
         "narrative": "Pragmatic narrative",
-        "goal": "Slow down change, delay decisions, balance risks and benefits",
-        "temporality": "The future is contingent (change is uncertain)",
-        "condition": "Limited resources to support change in current practices",
+        "goal": "Slow down change toward the prescribed future, delay decisions, balance risks and benefits (slower change)",
+        "temporality": "The future is contingent",
+        "condition": "Limited resources to support change in current practices as directed by the prescribed future",
     },
     "RESISTANT": {
         "narrative": "Control narrative",
-        "goal": "Contest the prescribed future, protect the status quo",
-        "temporality": "The future is distant (no change)",
-        "condition": "Low degree of alignment between current practices and the prescribed future",
+        "goal": "Contest the prescribed future, protect the status quo (no change)",
+        "temporality": "The future is distant",
+        "condition": "Low degree of alignment between current practices and prescribed future",
     },
     "EXPANDER": {
         "narrative": "Bigger picture narrative",
-        "goal": "Expand the prescribed future, propose new pathways and alternative futures",
-        "temporality": "The future is distant (broader change)",
+        "goal": "Expand the prescribed future, propose new trajectories and alternative futures (broader change)",
+        "temporality": "The future is distant",
         "condition": "Mismatch among current practices, normative practices, and those directed by the prescribed future",
     },
 }
@@ -333,10 +358,12 @@ def show_result(r: dict, reference: dict = None):
     if ori in WE_ORIENTATION_GUIDANCE:
         we = WE_ORIENTATION_GUIDANCE[ori]
         with st.expander("Policy guidance for this orientation"):
+            st.markdown(f"**Preferred future (Figure 1):** {PREFERRED_FUTURE.get(ori, '')}")
             st.write(_neutral(POLICY_ORIENTATION_GUIDANCE[ori]["implications"]))
             st.markdown(f"**Recommended action:** {_neutral(we['policy_action'])}")
             st.caption(TABLE_WE_SOURCE)
         with st.expander("Managerial guidance for this orientation"):
+            st.markdown(f"**Preferred future (Figure 1):** {PREFERRED_FUTURE.get(ori, '')}")
             st.write(_neutral(MANAGER_ORIENTATION_GUIDANCE[ori]["implications"]))
             st.markdown(f"**Intervention:** {_neutral(we['manager_action'])}")
             st.markdown(f"**Caution:** {_neutral(we['manager_caution'])}")
@@ -873,11 +900,14 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_tex
         mg = MANAGER_ORIENTATION_GUIDANCE[o]
         we = WE_ORIENTATION_GUIDANCE[o]
         with st.expander(f"{ORI_LABEL[o]}: managerial implications"):
+            st.markdown(f"**Preferred future (Figure 1):** {PREFERRED_FUTURE.get(o, '')}")
             st.write(_neutral(mg["implications"]))
             _render_adapted_block(valid, o)
             st.markdown(f"**Intervention:** {_neutral(we['manager_action'])}")
             st.markdown(f"**Caution:** {_neutral(we['manager_caution'])}")
             st.markdown(f"**Objective:** {_neutral(mg['objective'])}")
+            if mg.get("avoid"):
+                st.markdown(f"**Avoid (Table WE2):** {_neutral(mg['avoid'])}")
     st.markdown("**Messaging (managerial roadmap, step 5)**")
     st.write(WE_MESSAGING_RULE)
 
@@ -887,6 +917,7 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_tex
         pg = POLICY_ORIENTATION_GUIDANCE[o]
         we = WE_ORIENTATION_GUIDANCE[o]
         with st.expander(f"{ORI_LABEL[o]}: policy implications"):
+            st.markdown(f"**Preferred future (Figure 1):** {PREFERRED_FUTURE.get(o, '')}")
             st.write(_neutral(pg["implications"]))
             _render_adapted_block(valid, o)
             st.markdown(f"**Recommended action:** {_neutral(we['policy_action'])}")
@@ -1000,7 +1031,7 @@ def _show_dashboard(stored: dict, pseudo: bool, include_assumed: bool):
             "- **Links.** Each link states its basis. Links assumed by the tool are excluded from challenge review "
             "unless the user includes them.\n"
             "- **Challenges.** The three future-making challenges arise across linked comments and are not assigned to a single comment. "
-            "Fragile futures are a theoretical condition and are not scored by this tool.\n"
+            "The manuscript presents fragile futures as a conditional account; this tool does not score them.\n"
             "- **Limits.** The tool is a demonstration. Its results need interpretation with the full comments and context."
         )
 
@@ -1155,7 +1186,6 @@ def tab_multiple():
             st.error("An error occurred during the analysis. Check the server log.")
             return
         progress.empty()
-        prepare_records  # referenced for clarity; context is prepared before analysis
         st.session_state["multi"] = {
             "signature": signature,
             "results": results,
