@@ -33,8 +33,10 @@ from motor import (
     select_within_limit, _clean_enum,
 )
 
-logger = __import__("logging").getLogger("future_making_app")
-__import__("logging").basicConfig(level="INFO")
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("future_making_app")
 
 CTX_CODE = {label: code for label, code, _ in CONTEXT_TYPE_CHOICES}
 CTX_LABEL = {code: label for label, code, _ in CONTEXT_TYPE_CHOICES}
@@ -211,9 +213,6 @@ WE_MANAGER_STEP_ACTIONS = {
 # EXAMPLES
 # ─────────────────────────────────────────
 SINGLE_EXAMPLE_IDS = ["joe", "clara"]
-
-# Example 1: forum exchange labeled by the tool (not in the manuscript).
-CONV1_TEXT = None  # placeholder; see DEMO_CONVERSATION_REFERENCE in motor.py
 
 # Example 2: manuscript's competing enactments thread, as quoted in the manuscript's text.
 CONV2_TEXT = """User 1: I bought my EV because it was faster than the comparable ICE car, more spacious, has better range... at least $600 cheaper per quarter on "fuel," requires almost no maintenance or servicing... and gets regular improvements via software updates. It's the most brutally fast and best handling car I ever had!
