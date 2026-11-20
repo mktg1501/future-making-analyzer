@@ -197,7 +197,8 @@ CONVERSATION_EXAMPLES = {
             "Selected comments from one YouTube thread (Web Appendix C, Figure WC1). Quotes are reproduced from "
             "the manuscript, with […] marking omitted text. The manuscript states two reply links: Stefan replies "
             "to Rex's first comment, and Rex's second comment ('Rex again simplified') replies to Stefan. Rex's "
-            "first orientation is inferred from the text, not stated."
+            "first orientation is inferred from the text, not stated. The other links in this example are assumed "
+            "by the tool, because the manuscript does not state them."
         ),
     },
 }
@@ -881,8 +882,10 @@ def tab_multiple():
     if example:
         st.markdown(f"**Prescribed future for this example:** {PF_EV}")
         st.markdown(
-            "**Reply links:** Shown only where the manuscript states them: Stefan → Rex's first comment, and "
-            "Rex's second comment → Stefan. All other comments are analyzed on their own."
+            "**Reply links:** Stefan → Rex's first comment and Rex's second comment → Stefan are stated in the "
+            "manuscript. Each other comment is linked to the comment above it as an **assumed** link. Assumed "
+            "links are not evidence of interaction, and they are excluded from the leads for review unless you "
+            "include them."
         )
         with st.expander("Show the conversation", expanded=True):
             for block in example["text"].split("\n\n"):
