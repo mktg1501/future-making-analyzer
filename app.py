@@ -904,8 +904,11 @@ def tab_multiple():
         consent = st.checkbox(PII_CONSENT_LABEL, key="pii_multi")
     pseudo = st.checkbox("Pseudonymize authors in the table and download", value=True, key="pseudo_multi")
 
-    link_mode = "data"
-    if not example:
+    if example:
+        # The example uses the assumed option: each comment links to the one above it,
+        # except where the manuscript states a link.
+        link_mode = "assumed"
+    else:
         link_choice = st.radio(
             "How should comments be linked?",
             [LINK_CHOICE_DATA, LINK_CHOICE_ASSUMED],
