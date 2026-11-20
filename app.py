@@ -19,9 +19,9 @@ st.set_page_config(
 )
 
 from motor import (
-    ASSUMED_THREAD, CHALLENGE_DEFINITIONS, CONTEXT_TYPE_CHOICES, DEMO_BY_ID,
+    ASSUMED_THREAD, CONTEXT_TYPE_CHOICES, DEMO_BY_ID,
     DEMO_CONVERSATION_COMMENTS, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE,
-    LABELED_THREAD, LINK_ASSUMED, LINK_CONFIRMED, LINK_LABELED, LINK_NONE, LINK_STATED,
+    LABELED_THREAD, LINK_NONE, LINK_STATED,
     MANAGER_ORIENTATION_GUIDANCE, MANAGER_ROADMAP_STEPS, MAX_COMMENTS, ORIENTATION_ORDER,
     ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV, POLICY_ORIENTATION_GUIDANCE,
     POLICY_ROADMAP_STEPS, PREFERRED_FUTURE, analyze_comment, analyze_document,
@@ -87,26 +87,10 @@ ROADMAP_STATUS = {
 }
 
 TABLE_WE_SOURCE = (
-    "Source: manuscript"
+    "Source: manuscript Web Appendix D, Tables WD1 (policymaking) and WD2 (managerial), which apply the "
+    "roadmap to AI-integrated healthcare. This tool adapts the general steps and cautions to EV consumers; "
+    "the healthcare cases themselves are not used."
 )
-
-PAIR_NOTE = (
-    "Each pair is linked, shares an activity, and differs in orientation or subtype. A pair is a lead "
-    "for review, not evidence that a challenge occurred. The tool flags differences in performance; it "
-    "cannot detect personal challenges to a speaker's credibility, which the manuscript's Findings also "
-    "describe. Links are shown with their basis: confirmed in the data, stated in the source, given by the "
-    "order of User N labels, or assumed by the tool. Pairs with assumed links are hidden unless you include them."
-)
-
-DECISION_OPTIONS = ["Not reviewed", "Shows the challenge", "Does not show it", "Unsure"]
-
-LINK_BASIS_LABEL = {
-    LINK_CONFIRMED: "Confirmed in the data",
-    LINK_STATED: "Stated in the source's description (not platform data)",
-    LINK_LABELED: "Order given by the User N labels (not verified as replies)",
-    LINK_ASSUMED: "Assumed by the tool",
-    LINK_NONE: "No link",
-}
 
 THREAD_LABEL = {
     LABELED_THREAD: "Pasted conversation (User N labels)",
@@ -117,7 +101,7 @@ LINK_CHOICE_DATA = "Use only the links in the data"
 LINK_CHOICE_ASSUMED = "Assume each comment replies to the one above it, within each thread"
 
 # ─────────────────────────────────────────
-# GUIDANCE FROM TABLES WE1 AND WE2 (adapted to consumers)
+# GUIDANCE FROM TABLES WD1 AND WD2 (adapted to consumers)
 # ─────────────────────────────────────────
 WE_ORIENTATION_GUIDANCE = {
     "CATALYZER": {
@@ -177,7 +161,7 @@ WE_ORIENTATION_GUIDANCE = {
 
 WE_MESSAGING_RULE = (
     "Communicate achievements alongside uncertainty, trade-offs, limitations, enabling conditions, and "
-    "distributional effects. Avoid inevitability and universal-benefit claims. (Table WE2, step 5.)"
+    "distributional effects. Avoid inevitability and universal-benefit claims. (Table WD2, step 5.)"
 )
 
 WE_POLICY_STEP_ACTIONS = {
@@ -210,7 +194,10 @@ CONVERSATION_EXAMPLES = {
         "comments": DEMO_CONVERSATION_COMMENTS,
         "text": "\n\n".join(f"{c['author']}: {c['text']}" for c in DEMO_CONVERSATION_COMMENTS),
         "source_note": (
-            "Selected comments from manuscript"
+            "Selected comments from one YouTube thread (Web Appendix C, Figure WC1). Quotes are reproduced from "
+            "the manuscript, with […] marking omitted text. The manuscript states two reply links: Stefan replies "
+            "to Rex's first comment, and Rex's second comment ('Rex again simplified') replies to Stefan. Rex's "
+            "first orientation is inferred from the text, not stated."
         ),
     },
 }
@@ -537,24 +524,6 @@ def _author_label(r: dict, pseudo: bool) -> str:
     return pseudonymize(author) if pseudo else author
 
 
-def _label3(r: dict) -> str:
-    return (f"{_clean_enum(r.get('main_orientation', '')).title()} · "
-            f"{_clean_enum(r.get('main_activity', '')).title()} / "
-            f"{_clean_enum(r.get('activity_subtype', '')).title()}")
-
-
-def _link_basis(source: str) -> str:
-    return LINK_BASIS_LABEL.get(source or LINK_NONE, LINK_BASIS_LABEL[LINK_NONE])
-
-
-def _pair_id(pair: dict) -> str:
-    return f"{pair['parent']['_comment_id']}->{pair['reply']['_comment_id']}"
-
-
-def _one_line(text: str) -> str:
-    return str(text).replace("\n", " ")
-
-
 def _render_pie(coex: dict):
     values = [{
         "orientation": ORI_LABEL[o],
@@ -674,13 +643,14 @@ def _roadmap_integration(valid: list, results: list, pf_text: str, include_assum
     n_enact = sum(1 for r in valid if _clean_enum(r.get("main_activity", "")).upper() == "ENACTMENT")
     top = max(ORIENTATION_ORDER, key=lambda o: coex["counts"][o])
     shares = ", ".join(f"{ORI_LABEL[o]} {coex['counts'][o]}" for o in ORIENTATION_ORDER if coex["counts"][o])
+    leads_text = (f"Leads for review: convoluted evaluations {n_conv}, "
+                  f"confrontational negotiations {n_conf}, competing enactments {n_comp}.")
 
     if is_policy:
         content = {
             1: (f"Prescribed future: {pf_text[:200]}", "input"),
             2: (f"Orientations in this set: {shares} ({coex['n_present']} of 4 present).", "generated"),
-            3: (f"Linked pairs to review: convoluted evaluations {n_conv}, "
-                f"confrontational negotiations {n_conf}, competing enactments {n_comp}.", "review"),
+            3: (leads_text, "review"),
             4: (f"Largest group: {ORI_LABEL[top]} ({coex['counts'][top]} comments). "
                 "Choose support measures for each orientation present (see the policy implications).", "decision"),
             5: (f"Comments reporting enactment: {n_enact} of {len(valid)}. Decide which infrastructure "
@@ -692,8 +662,7 @@ def _roadmap_integration(valid: list, results: list, pf_text: str, include_assum
         content = {
             1: (f"Prescribed future: {pf_text[:200]}", "input"),
             2: (f"Orientations in this set: {shares} ({coex['n_present']} of 4 present).", "generated"),
-            3: (f"Linked pairs to review: convoluted evaluations {n_conv}, "
-                f"confrontational negotiations {n_conf}, competing enactments {n_comp}.", "review"),
+            3: (leads_text, "review"),
             4: (f"Largest group: {ORI_LABEL[top]} ({coex['counts'][top]} comments). "
                 "Choose support strategies sensitive to the orientations present.", "decision"),
             5: ("Check whether current messages mobilize one orientation while alienating others.", "decision"),
@@ -708,7 +677,7 @@ def _roadmap_integration(valid: list, results: list, pf_text: str, include_assum
         rows.append({
             "Step": f"{num}. {title}",
             "What this dataset shows": text,
-            "Table WE action (adapted)": we_actions.get(n, ""),
+            "Table WD action (adapted)": we_actions.get(n, ""),
             "Status": ROADMAP_STATUS[status],
         })
     st.dataframe(pd.DataFrame(rows), hide_index=True)
@@ -718,33 +687,20 @@ def _roadmap_integration(valid: list, results: list, pf_text: str, include_assum
     )
 
 
-def _render_activity_and_challenge_charts(valid: list, results: list, include_assumed: bool):
-    st.markdown("### Activities and challenges")
-
+def _render_activity_chart(valid: list):
+    st.markdown("### Dominant activities")
     dist = compute_dominant_distributions(valid)
+    if not dist["activity_counts"]:
+        st.info("No activities to chart.")
+        return
     activity_df = pd.DataFrame(
         [{"Activity": act.title(), "Comments": n} for act, n in dist["activity_counts"].items()]
+    ).set_index("Activity")
+    st.bar_chart(activity_df)
+    st.caption(
+        "Each comment is counted once, by its dominant activity. The three activities are interdependent, "
+        "so this shows each comment's main function, not everything it contains."
     )
-
-    candidates = compute_challenge_review_candidates(results, include_assumed=include_assumed)
-    challenge_df = pd.DataFrame([
-        {"Challenge (lead for review)": CHALLENGE_DEFINITIONS[k]["label"], "Linked pairs": len(v)}
-        for k, v in candidates.items()
-    ])
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**Dominant activities**")
-        if not activity_df.empty:
-            st.bar_chart(activity_df.set_index("Activity"))
-        st.caption("Each comment is counted once, by its dominant activity.")
-    with col2:
-        st.markdown("**Linked pairs flagged for review**")
-        st.bar_chart(challenge_df.set_index("Challenge (lead for review)"))
-        st.caption(
-            "These counts are leads for human review. They do not show that a challenge occurred, "
-            "and the manuscript does not assign challenges to single comments."
-        )
 
 
 def _render_analysis(valid: list, results: list, pseudo: bool, pf_text: str, include_assumed: bool):
@@ -806,7 +762,7 @@ def _render_analysis(valid: list, results: list, pseudo: bool, pf_text: str, inc
             st.markdown(f"**Caution:** {_neutral(we['manager_caution'])}")
             st.markdown(f"**Objective:** {_neutral(mg['objective'])}")
             if mg.get("avoid"):
-                st.markdown(f"**Avoid (Table WE2):** {_neutral(mg['avoid'])}")
+                st.markdown(f"**Avoid (Table WD2):** {_neutral(mg['avoid'])}")
     st.markdown("**Messaging (managerial roadmap, step 5)**")
     st.write(WE_MESSAGING_RULE)
 
@@ -855,7 +811,7 @@ def _show_dashboard(stored: dict, pseudo: bool, include_assumed: bool):
         } for o in ORIENTATION_ORDER]), hide_index=True)
         st.caption("The chart shows the same information as the table, so it can be read without color.")
 
-    _render_activity_and_challenge_charts(valid, results, include_assumed)
+    _render_activity_chart(valid)
 
     by_thread = orientations_by_thread(valid)
     if by_thread:
@@ -925,8 +881,8 @@ def tab_multiple():
     if example:
         st.markdown(f"**Prescribed future for this example:** {PF_EV}")
         st.markdown(
-            "**Reply links:** Shown only where the example states them (Rex → Stefan). "
-            "All other comments are analyzed on their own."
+            "**Reply links:** Shown only where the manuscript states them: Stefan → Rex's first comment, and "
+            "Rex's second comment → Stefan. All other comments are analyzed on their own."
         )
         with st.expander("Show the conversation", expanded=True):
             for block in example["text"].split("\n\n"):
@@ -988,7 +944,7 @@ def tab_multiple():
             "in the results. Links follow the order of the input, not the timestamps."
         )
         include_assumed = st.checkbox(
-            "Include pairs with assumed links in the review section",
+            "Include assumed links in the leads for review",
             value=False, key="include_assumed",
         )
 
