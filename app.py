@@ -718,6 +718,35 @@ def _roadmap_integration(valid: list, results: list, pf_text: str, include_assum
     )
 
 
+def _render_activity_and_challenge_charts(valid: list, results: list, include_assumed: bool):
+    st.markdown("### Activities and challenges")
+
+    dist = compute_dominant_distributions(valid)
+    activity_df = pd.DataFrame(
+        [{"Activity": act.title(), "Comments": n} for act, n in dist["activity_counts"].items()]
+    )
+
+    candidates = compute_challenge_review_candidates(results, include_assumed=include_assumed)
+    challenge_df = pd.DataFrame([
+        {"Challenge (lead for review)": CHALLENGE_DEFINITIONS[k]["label"], "Linked pairs": len(v)}
+        for k, v in candidates.items()
+    ])
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Dominant activities**")
+        if not activity_df.empty:
+            st.bar_chart(activity_df.set_index("Activity"))
+        st.caption("Each comment is counted once, by its dominant activity.")
+    with col2:
+        st.markdown("**Linked pairs flagged for review**")
+        st.bar_chart(challenge_df.set_index("Challenge (lead for review)"))
+        st.caption(
+            "These counts are leads for human review. They do not show that a challenge occurred, "
+            "and the manuscript does not assign challenges to single comments."
+        )
+
+
 def _render_analysis(valid: list, results: list, pseudo: bool, pf_text: str, include_assumed: bool):
     coex = orientation_coexistence(valid)
     present = coex["present"]
@@ -825,6 +854,8 @@ def _show_dashboard(stored: dict, pseudo: bool, include_assumed: bool):
             "Share": f"{coex['shares'][o]:.0%}",
         } for o in ORIENTATION_ORDER]), hide_index=True)
         st.caption("The chart shows the same information as the table, so it can be read without color.")
+
+    _render_activity_and_challenge_charts(valid, results, include_assumed)
 
     by_thread = orientations_by_thread(valid)
     if by_thread:
