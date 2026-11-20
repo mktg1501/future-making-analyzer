@@ -858,8 +858,8 @@ MANAGER_MESSAGING_NOTE = (
 # PAPER EXAMPLES (demonstration and internal check)
 # ─────────────────────────────────────────
 PF_EV = (
-    "Transition all vehicles to Zero Emission Vehicles (ZEV), including electric vehicles, to achieve "
-    "Australia's net-zero emissions targets, as prescribed by Australia's National Electric Vehicle Strategy (2023)"
+    "Accelerate adoption of zero emission vehicles (ZEV), including electric vehicles, to meet "
+    "Australia's net-zero emissions targets, as set out in the National Electric Vehicle Strategy (2023)"
 )
 
 DEMO_EXAMPLES = [
