@@ -20,7 +20,7 @@ st.set_page_config(
 
 from motor import (
     ASSUMED_THREAD, CHALLENGE_DEFINITIONS, CONTEXT_TYPE_CHOICES, DEMO_BY_ID,
-    DEMO_CONVERSATION_REFERENCE, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE,
+    DEMO_CONVERSATION_COMMENTS, HOMEPAGE_DESCRIPTION, INTERPRETIVE_USE_NOTE,
     LABELED_THREAD, LINK_ASSUMED, LINK_CONFIRMED, LINK_LABELED, LINK_NONE, LINK_STATED,
     MANAGER_ORIENTATION_GUIDANCE, MANAGER_ROADMAP_STEPS, MAX_COMMENTS, ORIENTATION_ORDER,
     ORIENTATIONS, PAPER_TITLE, PAPER_URL, PF_EV, POLICY_ORIENTATION_GUIDANCE,
@@ -232,39 +232,15 @@ CONV2_REFERENCE = {
 
 CONVERSATION_EXAMPLES = {
     "conv1": {
-        "label": "Example 1: forum exchange on the adoption curve (4 users)",
-        "text": (
-            "User 1: EVs will be on an exponential adoption curve. Everyone will want one... Nobody will want an "
-            "expensive 2nd hand ICE... Globally, governments are going to start making fossil fuels very expensive. "
-            "T-A-X-E-S will be levied on this foul, polluting rubbish we are all burning today... Or are you advocating "
-            "that we go back to bicycles and horses, or maybe just buses?\n\n"
-            "User 2: Better tell that to the Prius owners replacing their batteries. My car is now 13 years old... "
-            "Batteries wear over time... so what magic bullet have you discovered that defies physics...? Once someone "
-            "like me can get a used EV for <$10k, and have the battery replaced cheaply, then I'll agree with you... "
-            "I'm not anti EV, I'm just realistic about costs and time frames.\n\n"
-            "User 3: Nope, I'm not confused, thanks for the concern though... If he bought an ICE car now, he will get "
-            "6-10 years use out of it and sell it for scrap value and registration. Not even close to the financial ruin "
-            "you are trying to peddle... Technology adoption curves typically look like bell curves... not what you are "
-            "suggesting... This is delusional.\n\n"
-            "User 4: I fully get what you're saying, it's not rocket science, but that's not what I'm on about... I simply "
-            "object to being told I'm an idiot... I'd like to see passenger cars filled with passengers, less cars on the "
-            "road, less money spent on new roads!... Where people may simply drive less."
-        ),
-        "reference": DEMO_CONVERSATION_REFERENCE,
+        "label": "Example 1: YouTube thread on EV evaluations (8 selected comments)",
+        "text": "\n\n".join(f"{c['author']}: {c['text']}" for c in DEMO_CONVERSATION_COMMENTS),
+        "reference": {c["comment_id"]: c["reference"] for c in DEMO_CONVERSATION_COMMENTS},
         "source_note": (
-            "Forum exchange from the Whirlpool archive, labeled User 1 to User 4 by the developers. It is not "
-            "quoted in the manuscript, so its reference labels are ours, not the authors'. Replace it with the "
-            "manuscript's confrontational negotiation thread when the full text is available."
-        ),
-    },
-    "conv2": {
-        "label": "Example 2: social media thread on competing enactments (4 users)",
-        "text": CONV2_TEXT,
-        "reference": CONV2_REFERENCE,
-        "source_note": (
-            "Thread illustrating competing enactments. The manuscript labels some users by orientation and "
-            "describes some enactments; the activity subtypes are a proposed coding that researchers should "
-            "check before use. Replace it with the complete manuscript text when available."
+            "Selected comments from one YouTube thread (Web Appendix C, Figure WC1). The manuscript quotes "
+            "these comments and states their orientations and activities. Quotes are reproduced from the "
+            "manuscript, with \"[…]\" marking omitted text. The reply link between Rex and Stefan is stated "
+            "in the manuscript. The orientation of Rex's first comment is inferred from the text \"Rex again "
+            "simplified,\" so it is marked as inferred."
         ),
     },
 }
