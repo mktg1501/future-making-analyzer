@@ -851,7 +851,6 @@ def _show_dashboard(stored: dict, pseudo: bool, include_assumed: bool):
             "Orientation": _clean_enum(r.get("main_orientation", "")),
             "Activity": _clean_enum(r.get("main_activity", "")),
             "Subtype": _clean_enum(r.get("activity_subtype", "")),
-            "Link basis": _link_basis(r.get("_link_source")),
             "Activity rationale": r.get("activity_rationale", ""),
             "Orientation rationale": r.get("orientation_rationale", ""),
             "Narrative": r.get("narrative_identified", ""),
@@ -974,7 +973,6 @@ def tab_multiple():
         st.dataframe(pd.DataFrame([{
             "ID": r["comment_id"],
             "Author": pseudonymize(r.get("author", "")) if pseudo else r.get("author", ""),
-            "Link basis": _link_basis(r.get("link_source")),
             "Comment": r["comment_text"],
         } for r in selected]), hide_index=True)
 
