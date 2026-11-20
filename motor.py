@@ -1698,58 +1698,50 @@ def run_framework_validation() -> list:
         {e["referencia"]["orientation"] for e in DEMO_EXAMPLES} == REQUIRED_ORIENTATIONS, "")
     add("Interface examples (joe, clara) exist", "joe" in DEMO_BY_ID and "clara" in DEMO_BY_ID, "")
     add("Demo conversation: all four orientations appear, and every reference is valid",
-    {c["reference"]["orientation"] for c in DEMO_CONVERSATION_COMMENTS} == REQUIRED_ORIENTATIONS
-    and all(ORIENTATION_TO_SUBTYPE.get((c["reference"]["activity"], c["reference"]["orientation"]))
-            == c["reference"]["subtype"] for c in DEMO_CONVERSATION_COMMENTS), "")
-    add("Assumed links are hidden by default and shown only when requested",
-        _assumed_link_selftest(), "")
-    add("Assumed links stay within a thread; confirmed links are never overwritten",
-        _assumed_thread_selftest(), "")
-    add("Quote-based links: only when a post quotes an earlier post; timestamp order",
-        _quote_link_selftest(), "")
+        {c["reference"]["orientation"] for c in DEMO_CONVERSATION_COMMENTS} == REQUIRED_ORIENTATIONS
+        and all(ORIENTATION_TO_SUBTYPE.get((c["reference"]["activity"], c["reference"]["orientation"]))
+                == c["reference"]["subtype"] for c in DEMO_CONVERSATION_COMMENTS), "")
+    add("Assumed links hidden by default and shown on request", _assumed_link_selftest(), "")
+    add("Assumed links created only within a thread", _assumed_thread_selftest(), "")
+    add("Quote-based links follow quotes, not file order", _quote_link_selftest(), "")
     ok, detail = check_obsolete_terms()
-    add("No obsolete terms in the code", ok, detail)
+    add("No obsolete terms in motor.py or app.py", ok, detail)
     return tests
 
 
-def run_consistency_suite() -> dict:
-    """INTERNAL consistency check against the paper examples. The examples are also in the prompt,
-    so this is not empirical validation or inter-coder reliability."""
-    def run(ex):
-        try:
-            pred = analyze_comment(PF_EV, ex["comment"], ex["context"], ex["context_type"], False, True)
-            return ex, pred, ""
-        except (ValueError, RuntimeError) as e:
-            return ex, None, str(e)
+def _print_tests(tests: list) -> bool:
+    all_ok = True
+    for name, ok, detail in tests:
+        all_ok = all_ok and ok
+        line = f"[{'OK' if ok else 'FAIL'}] {name}"
+        if not ok and detail:
+            line += f" -- {detail}"
+        print(line)
+    return all_ok
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=DOC_MAX_WORKERS) as pool:
-        outcomes = list(pool.map(run, DEMO_EXAMPLES))
 
-    rows = []
-    for ex, pred, err in outcomes:
+def run_consistency_check():
+    """Runs the paper's examples through the model and compares with the reference labels. Uses the API."""
+    matches = 0
+    for ex in DEMO_EXAMPLES:
         ref = ex["referencia"]
-        expected = (ref["activity"], ref["subtype"], ref["orientation"])
-        if pred is None:
-            rows.append({"example": ex["titulo"], "expected": expected, "predicted": None,
-                         "match": False, "error": err})
-            continue
-        predicted = (pred["main_activity"], pred["activity_subtype"], pred["main_orientation"])
-        rows.append({"example": ex["titulo"], "expected": expected, "predicted": predicted,
-                     "match": predicted == expected, "error": ""})
-    n = len(rows)
-    return {"results": rows, "overall_agreement": (sum(r["match"] for r in rows) / n) if n else 0.0}
+        r = analyze_comment(PF_EV, ex["comment"], "", "NONE", False, allow_secondary=False)
+        got = (r["main_activity"], r["activity_subtype"], r["main_orientation"])
+        want = (ref["activity"], ref["subtype"], ref["orientation"])
+        ok = got == want
+        matches += ok
+        print(f"[{'MATCH' if ok else 'DIFF'}] {ex['id']}: model {got} | paper {want}")
+    print(f"\n{matches} of {len(DEMO_EXAMPLES)} examples match the paper's labels.")
+
+
+def main():
+    if "--consistencia" in sys.argv:
+        run_consistency_check()
+        return
+    tests = run_framework_validation()
+    passed = _print_tests(tests)
+    sys.exit(0 if passed else 1)
 
 
 if __name__ == "__main__":
-    failed = 0
-    for name, ok, detail in run_framework_validation():
-        print(f"[{'OK' if ok else 'FAIL'}] {name}" + (f" — {detail}" if detail else ""))
-        failed += 0 if ok else 1
-    if "--consistencia" in sys.argv:
-        report = run_consistency_suite()
-        print(f"\nInternal consistency: {report['overall_agreement']:.0%} "
-              "(the examples are also in the prompt; this is not validation).")
-        for row in report["results"]:
-            mark = "✔" if row["match"] else "✘"
-            print(f"  {mark} {row['example']}: {row['predicted']} {row['error']}")
-    sys.exit(1 if failed else 0)
+    main()
