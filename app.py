@@ -212,11 +212,7 @@ CONVERSATION_EXAMPLES = {
         "comments": DEMO_CONVERSATION_COMMENTS,
         "text": "\n\n".join(f"{c['author']}: {c['text']}" for c in DEMO_CONVERSATION_COMMENTS),
         "source_note": (
-            "Selected comments from one YouTube thread (Web Appendix C, Figure WC1). The manuscript quotes "
-            "these comments and states their orientations and activities. Quotes are reproduced from the "
-            "manuscript, with \"[…]\" marking omitted text. The reply link between Rex and Stefan is stated "
-            "in the manuscript. The orientation of Rex's first comment is inferred from the text \"Rex again "
-            "simplified,\" so it is marked as inferred."
+            "Selected comments from manuscript"
         ),
     },
 }
@@ -965,7 +961,7 @@ def tab_multiple():
     if example:
         st.markdown(f"**Prescribed future for this example:** {PF_EV}")
         st.markdown(
-            "**Reply links:** Shown only where the manuscript states them (Rex → Stefan). "
+            "**Reply links:** Shown only where the example states them (Rex → Stefan). "
             "All other comments are analyzed on their own."
         )
         with st.expander("Show the conversation", expanded=True):
