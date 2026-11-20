@@ -33,8 +33,6 @@ from motor import (
     select_within_limit, _clean_enum,
 )
 
-import logging
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("future_making_app")
 
@@ -87,12 +85,6 @@ ROADMAP_STATUS = {
     "decision": "Needs a decision by your team",
     "input": "Defined by you",
 }
-
-FRAGILITY_NOTE = (
-    "These are observable indicators. The manuscript treats fragile futures as a conditional account: "
-    "the three challenges can create conditions under which the prescribed future is fragile. These "
-    "indicators do not measure fragility."
-)
 
 TABLE_WE_SOURCE = (
     "Source: manuscript Web Appendix E, Tables WE1 (policymaking) and WE2 (managerial), which apply the "
@@ -214,27 +206,11 @@ WE_MANAGER_STEP_ACTIONS = {
 # ─────────────────────────────────────────
 SINGLE_EXAMPLE_IDS = ["joe", "clara"]
 
-# Example 2: manuscript's competing enactments thread, as quoted in the manuscript's text.
-CONV2_TEXT = """User 1: I bought my EV because it was faster than the comparable ICE car, more spacious, has better range... at least $600 cheaper per quarter on "fuel," requires almost no maintenance or servicing... and gets regular improvements via software updates. It's the most brutally fast and best handling car I ever had!
-
-User 2: In the building where I live there are 150 underground carparks. All full. There is no reserve capacity in the building to install charging points for 1% of that. Nor any in the feed from the street, nor any in the feed to the suburb... I have no objection to eventually driving an EV, but it's just not happening any time soon. The infrastructure is decades away.
-
-User 3: I won't be getting one, I'll stick to my V8 and my other diesel 4x4...
-
-User 4: Maybe some reliable public transport would be an answer."""
-
-CONV2_REFERENCE = {
-    "user1": {"activity": "ENACTMENT", "subtype": "ACCELERATE", "orientation": "CATALYZER"},
-    "user2": {"activity": "ENACTMENT", "subtype": "DELAY", "orientation": "AMBIVALENT"},
-    "user3": {"activity": "ENACTMENT", "subtype": "PREVENT", "orientation": "RESISTANT"},
-    "user4": {"activity": "ENACTMENT", "subtype": "REROUTE", "orientation": "EXPANDER"},
-}
-
 CONVERSATION_EXAMPLES = {
     "conv1": {
         "label": "Example 1: YouTube thread on EV evaluations (8 selected comments)",
+        "comments": DEMO_CONVERSATION_COMMENTS,
         "text": "\n\n".join(f"{c['author']}: {c['text']}" for c in DEMO_CONVERSATION_COMMENTS),
-        "reference": {c["comment_id"]: c["reference"] for c in DEMO_CONVERSATION_COMMENTS},
         "source_note": (
             "Selected comments from one YouTube thread (Web Appendix C, Figure WC1). The manuscript quotes "
             "these comments and states their orientations and activities. Quotes are reproduced from the "
@@ -500,11 +476,23 @@ SOURCE_CONV = "Pasted conversation with labels 'User 1:', 'User 2:'"
 SOURCE_OPTIONS = [SOURCE_CSV, SOURCE_PASTE, SOURCE_CONV] + [v["label"] for v in CONVERSATION_EXAMPLES.values()]
 
 
+def _records_from_comments(comments):
+    """Builds analysis records from the curated example comments, keeping only the stated reply links."""
+    return [{
+        "comment_id": c["comment_id"],
+        "author": c["author"],
+        "comment_text": c["text"],
+        "thread_id": "youtube_thread",
+        "parent_comment_id": c["reply_to"],
+        "link_source": LINK_STATED if c["reply_to"] else LINK_NONE,
+    } for c in comments]
+
+
 def _read_records(source, is_consult, uploaded, text):
     """Returns (records, messages[(level, text)])."""
     msgs = []
     if source in CONVERSATION_BY_LABEL:
-        return build_comment_records_from_user_labels(CONVERSATION_BY_LABEL[source]["text"]), msgs
+        return _records_from_comments(CONVERSATION_BY_LABEL[source]["comments"]), msgs
 
     if source == SOURCE_CSV:
         if uploaded is None:
@@ -647,45 +635,6 @@ def _render_adapted_block(valid: list, ori: str):
     st.caption("Labels come from the model. Check them against the complete comments before relying on them.")
 
 
-def _render_reference_comparison(valid: list, reference: dict):
-    rows = []
-    for r in valid:
-        ref = reference.get(r["_comment_id"])
-        if not ref:
-            continue
-        pred = (_clean_enum(r.get("main_activity", "")).upper(),
-                _clean_enum(r.get("activity_subtype", "")).upper(),
-                _clean_enum(r.get("main_orientation", "")).upper())
-        exp = (ref["activity"], ref["subtype"], ref["orientation"])
-        rows.append({
-            "Participant": r["_comment_id"],
-            "Reference": f"{exp[2].title()} · {exp[0].title()} / {exp[1].title()}",
-            "Model": f"{pred[2].title()} · {pred[0].title()} / {pred[1].title()}",
-            "Match": "Yes" if pred == exp else "No",
-        })
-    if rows:
-        st.markdown("**Comparison with the reference classification**")
-        st.dataframe(pd.DataFrame(rows), hide_index=True)
-        st.caption(EXAMPLE_NOTE)
-
-
-def _adjacency_rows(valid: list, pseudo: bool) -> list:
-    by_id = {r["_comment_id"]: r for r in valid if r.get("_comment_id")}
-    rows = []
-    for r in valid:
-        parent = by_id.get(r.get("_parent_comment_id"))
-        if not parent:
-            continue
-        rows.append({
-            "Replying participant": _author_label(r, pseudo) or r["_comment_id"],
-            "Responds to": _author_label(parent, pseudo) or parent["_comment_id"],
-            "Previous comment": _label3(parent),
-            "Reply": _label3(r),
-            "Link basis": _link_basis(r.get("_link_source")),
-        })
-    return rows
-
-
 def _repeat_participants(valid: list, pseudo: bool) -> list:
     groups = {}
     for r in valid:
@@ -775,41 +724,7 @@ def _roadmap_integration(valid: list, results: list, pf_text: str, include_assum
     )
 
 
-def _fragility_indicators(valid: list, results: list, include_assumed: bool):
-    st.markdown("#### Fragile futures: observable indicators")
-    st.write(FRAGILITY_NOTE)
-
-    coex = orientation_coexistence(valid)
-    candidates = compute_challenge_review_candidates(results, include_assumed=include_assumed)
-    enact = [r for r in valid if _clean_enum(r.get("main_activity", "")).upper() == "ENACTMENT"]
-    enact_subs = {_clean_enum(r.get("activity_subtype", "")).upper() for r in enact} - {""}
-    accelerate = sum(1 for r in enact if _clean_enum(r.get("activity_subtype", "")).upper() == "ACCELERATE")
-
-    rows = [
-        {"Indicator": "Orientations present (of 4)",
-         "Observed in this set": f"{coex['n_present']} of 4",
-         "Paper's concept": "Multiple preferred futures"},
-        {"Indicator": "Linked pairs flagged: confrontational negotiation",
-         "Observed in this set": f"{len(candidates['CONFRONTATIONAL_NEGOTIATIONS'])} pair(s) for review",
-         "Paper's concept": "Confrontational negotiations"},
-        {"Indicator": "Linked pairs flagged: convoluted evaluation",
-         "Observed in this set": f"{len(candidates['CONVOLUTED_EVALUATIONS'])} pair(s) for review",
-         "Paper's concept": "Convoluted evaluations"},
-        {"Indicator": "Enactment subtypes present (of 4)",
-         "Observed in this set": f"{len(enact_subs)} of 4" if enact else "No enactment comments",
-         "Paper's concept": "Competing enactments"},
-        {"Indicator": "Enactment comments that accelerate the prescribed future",
-         "Observed in this set": f"{accelerate} of {len(enact)}" if enact else "No enactment comments",
-         "Paper's concept": "Acceleration of the prescribed future"},
-        {"Indicator": "Volatility over time",
-         "Observed in this set": "Not observable from one run",
-         "Paper's concept": "Volatility"},
-    ]
-    st.dataframe(pd.DataFrame(rows), hide_index=True)
-    st.caption("Keep these indicators separate. Do not add them into a single index.")
-
-
-def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_text: str, include_assumed: bool):
+def _render_analysis(valid: list, results: list, pseudo: bool, pf_text: str, include_assumed: bool):
     coex = orientation_coexistence(valid)
     present = coex["present"]
     dist = compute_dominant_distributions(valid)
@@ -846,17 +761,6 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_tex
 
     _roadmap_integration(valid, results, pf_text, include_assumed)
 
-    _fragility_indicators(valid, results, include_assumed)
-
-    adjacency = _adjacency_rows(valid, pseudo)
-    if adjacency:
-        st.markdown("**Replies compared with the comment they answer**")
-        st.write(
-            "This table is descriptive. It shows which orientation and activity each reply has, next to the "
-            "comment it responds to, and the basis of each link. It does not show that one performance caused the other."
-        )
-        st.dataframe(pd.DataFrame(adjacency), hide_index=True)
-
     repeats = _repeat_participants(valid, pseudo)
     if repeats:
         st.markdown("**Participants with more than one comment**")
@@ -865,9 +769,6 @@ def _render_analysis(valid: list, results: list, pseudo: bool, reference, pf_tex
             "show orientations in use across comments; they do not show how or why a participant changed."
         )
         st.dataframe(pd.DataFrame(repeats), hide_index=True)
-
-    if reference:
-        _render_reference_comparison(valid, reference)
 
     st.markdown("#### 2. Managerial implications")
     st.caption(TABLE_WE_SOURCE)
@@ -990,7 +891,7 @@ def _show_dashboard(stored: dict, pseudo: bool, include_assumed: bool):
             })
         st.dataframe(pd.DataFrame(rows), hide_index=True)
 
-    _render_analysis(valid, results, pseudo, stored.get("reference"), pf_text, include_assumed)
+    _render_analysis(valid, results, pseudo, pf_text, include_assumed)
 
     _linked_pairs_section(results, pseudo, include_assumed)
 
@@ -1042,7 +943,7 @@ def _show_dashboard(stored: dict, pseudo: bool, include_assumed: bool):
 
 def tab_multiple():
     st.subheader("Map orientations across several comments")
-    st.caption("Upload a CSV, paste comments, or choose one of the two example conversations.")
+    st.caption("Upload a CSV, paste comments, or choose the example conversation.")
     st.info(PRIVACY_NOTICE)
 
     st.session_state.setdefault("pf_multi", PF_EV)
@@ -1064,8 +965,8 @@ def tab_multiple():
     if example:
         st.markdown(f"**Prescribed future for this example:** {PF_EV}")
         st.markdown(
-            "**Context type:** Parent comment. Each user is read with the previous user's comment as context; "
-            "User 1 has no context."
+            "**Reply links:** Shown only where the manuscript states them (Rex → Stefan). "
+            "All other comments are analyzed on their own."
         )
         with st.expander("Show the conversation", expanded=True):
             for block in example["text"].split("\n\n"):
@@ -1166,7 +1067,6 @@ def tab_multiple():
             "results": results,
             "omitted": omitted,
             "pf": pf.strip(),
-            "reference": example["reference"] if example else None,
         }
 
     stored = st.session_state.get("multi")
