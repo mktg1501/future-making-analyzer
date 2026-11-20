@@ -951,22 +951,42 @@ DEMO_EXAMPLES = [
 
 DEMO_BY_ID = {ex["id"]: ex for ex in DEMO_EXAMPLES}
 
-# Paper conversation (forum). The "User N:" labels give the order of the exchange.
-# That order is the authors' presentation, not a verified reply chain.
-DEMO_CONVERSATION = """User 1: EVs will be on an exponential adoption curve. Everyone will want one... Nobody will want an expensive 2nd hand ICE... Globally, governments are going to start making fossil fuels very expensive. T-A-X-E-S will be levied on this foul, polluting rubbish we are all burning today... Or are you advocating that we go back to bicycles and horses, or maybe just buses?
-
-User 2: Better tell that to the Prius owners replacing their batteries. My car is now 13 years old... Batteries wear over time... so what magic bullet have you discovered that defies physics...? Once someone like me can get a used EV for <$10k, and have the battery replaced cheaply, then I'll agree with you... I'm not anti EV, I'm just realistic about costs and time frames.
-
-User 3: Nope, I'm not confused, thanks for the concern though... If he bought an ICE car now, he will get 6-10 years use out of it and sell it for scrap value and registration. Not even close to the financial ruin you are trying to peddle... Technology adoption curves typically look like bell curves... not what you are suggesting... This is delusional.
-
-User 4: I fully get what you're saying, it's not rocket science, but that's not what I'm on about... I simply object to being told I'm an idiot... I'd like to see passenger cars filled with passengers, less cars on the road, less money spent on new roads!... Where people may simply drive less."""
-
-DEMO_CONVERSATION_REFERENCE = {
-    "user1": {"activity": "NEGOTIATION", "subtype": "ADVOCATE", "orientation": "CATALYZER"},
-    "user2": {"activity": "NEGOTIATION", "subtype": "QUESTION", "orientation": "AMBIVALENT"},
-    "user3": {"activity": "NEGOTIATION", "subtype": "REJECT", "orientation": "RESISTANT"},
-    "user4": {"activity": "NEGOTIATION", "subtype": "CONTEST", "orientation": "EXPANDER"},
-}
+# Convoluted evaluations: selected comments from one YouTube thread (Web Appendix C, Figure WC1).
+# Quotes are reproduced from the manuscript. "[…]" marks text the authors omitted.
+# reply_to is set only where the manuscript states the reply relation. The thread
+# has 408 comments; these are the ones the authors quote.
+DEMO_CONVERSATION_COMMENTS = [
+    {"comment_id": "ownchannel", "author": "ownChannel", "reply_to": None,
+     "text": "Nothing is zero emission. I go for a walk and I create emissions. "
+             "But Electric car[s] have waaay lower emissions than ICE cars",
+     "reference": {"activity": "EVALUATION", "subtype": "SIMPLIFY", "orientation": "CATALYZER"}},
+    {"comment_id": "rex_1", "author": "Rex", "reply_to": None,
+     "text": "The every day event pollutes thousands of times more than the one time production event",
+     "reference": {"activity": "EVALUATION", "subtype": "SIMPLIFY", "orientation": "CATALYZER"}},
+    {"comment_id": "stefan", "author": "Stefan", "reply_to": "rex_1",
+     "text": "The question is: what is the difference pollution-wise between making an EV and making an ICE car? "
+             "And, if the EV is more polluting to make, how many miles would it take to get rid of that difference? "
+             "If the EV was charged with \"dirty\" electricity, is it then polluting or not? "
+             "What about the cost of recycling? It's a complex issue […] Articles and information that claim one "
+             "over the other are always sponsored by someone",
+     "reference": {"activity": "EVALUATION", "subtype": "STALL", "orientation": "AMBIVALENT"}},
+    {"comment_id": "rex_2", "author": "Rex", "reply_to": None,
+     "text": "Batteries can and will be recycled. ICE vehicles are laying out in junkyards",
+     "reference": {"activity": "EVALUATION", "subtype": "SIMPLIFY", "orientation": "CATALYZER"}},
+    {"comment_id": "walt", "author": "Walt", "reply_to": None,
+     "text": "I wouldn't buy one not knowing how much life a used EV battery will last",
+     "reference": {"activity": "EVALUATION", "subtype": "STALL", "orientation": "AMBIVALENT"}},
+    {"comment_id": "ross_1", "author": "Ross", "reply_to": None,
+     "text": "They are NOT emissions free. They still have harmful noise emissions and particle emissions "
+             "from tires, roads and brake dust",
+     "reference": {"activity": "EVALUATION", "subtype": "COMPLEXIFY", "orientation": "EXPANDER"}},
+    {"comment_id": "ross_2", "author": "Ross", "reply_to": None,
+     "text": "Anyway EVs are NOT the solution. Electric trains and buses plus accessible walking and cycling infrastructure",
+     "reference": {"activity": "EVALUATION", "subtype": "COMPLEXIFY", "orientation": "EXPANDER"}},
+    {"comment_id": "marksi", "author": "Marksi", "reply_to": None,
+     "text": "They won't save the planet buying an EV […] The production of the EV with mining does more damage than an ICE",
+     "reference": {"activity": "EVALUATION", "subtype": "AVOID", "orientation": "RESISTANT"}},
+]
 
 # ─────────────────────────────────────────
 # MODEL OUTPUT AND CONSISTENCY
