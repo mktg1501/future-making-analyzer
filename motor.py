@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # CONFIGURATION
 # ─────────────────────────────────────────
 PAPER_TITLE = "Futures in the Making: How Consumers Respond to Future-Oriented Interventions"
-PAPER_URL = "REPLACE_WITH_YOUR_DOI_OR_URL"  # Replace with the real DOI or link
+PAPER_URL = "URL coming soon"  # Replace with the real DOI or link
 
 MODEL_NAME = "gpt-4o-mini"
 DOC_MAX_WORKERS = 5
