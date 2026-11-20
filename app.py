@@ -87,9 +87,7 @@ ROADMAP_STATUS = {
 }
 
 TABLE_WE_SOURCE = (
-    "Source: manuscript Web Appendix E, Tables WE1 (policymaking) and WE2 (managerial), which apply the "
-    "roadmap to AI-integrated healthcare. This tool adapts the general steps and cautions to EV consumers; "
-    "the healthcare cases themselves are not used."
+    "Source: manuscript"
 )
 
 PAIR_NOTE = (
@@ -726,7 +724,7 @@ def _render_analysis(valid: list, results: list, pseudo: bool, pf_text: str, inc
     dist = compute_dominant_distributions(valid)
 
     st.markdown("### Analysis and implications")
-    st.caption("Based on the manuscript and its Web Appendix. Each comment is counted once, by its dominant activity and orientation.")
+    st.caption("Based on the manuscript. Each comment is counted once, by its dominant activity and orientation.")
 
     st.markdown("#### 1. Analysis of the results")
     st.write(_coexistence_sentence(coex))
