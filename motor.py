@@ -1711,9 +1711,10 @@ def run_framework_validation() -> list:
     add("Demo examples cover all 4 orientations",
         {e["referencia"]["orientation"] for e in DEMO_EXAMPLES} == REQUIRED_ORIENTATIONS, "")
     add("Interface examples (joe, clara) exist", "joe" in DEMO_BY_ID and "clara" in DEMO_BY_ID, "")
-    add("Demo conversation: one reference per orientation",
-        {v["orientation"] for v in DEMO_CONVERSATION_REFERENCE.values()} == REQUIRED_ORIENTATIONS
-        and len(DEMO_CONVERSATION_REFERENCE) == 4, "")
+    add("Demo conversation: all four orientations appear, and every reference is valid",
+    {c["reference"]["orientation"] for c in DEMO_CONVERSATION_COMMENTS} == REQUIRED_ORIENTATIONS
+    and all(ORIENTATION_TO_SUBTYPE.get((c["reference"]["activity"], c["reference"]["orientation"]))
+            == c["reference"]["subtype"] for c in DEMO_CONVERSATION_COMMENTS), "")
     add("Assumed links are hidden by default and shown only when requested",
         _assumed_link_selftest(), "")
     add("Assumed links stay within a thread; confirmed links are never overwritten",
