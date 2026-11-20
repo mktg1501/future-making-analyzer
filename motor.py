@@ -1199,12 +1199,12 @@ def analyze_document(records: list, prescribed_future: str, progress_callback=No
             r = future.result()
             r.update({
                 "_comment_id": rec["comment_id"],
-                "_thread_id": rec["thread_id"],
+                "_thread_id": rec.get("thread_id", DEFAULT_THREAD),
                 "_parent_comment_id": rec.get("parent_comment_id"),
                 "_link_source": rec.get("link_source", LINK_NONE),
                 "_comment_text": rec["comment_text"],
                 "_author": rec.get("author", ""),
-                "_original_index": rec["original_index"],
+                "_original_index": rec.get("original_index", pos),
             })
             results[pos] = r
             done += 1
@@ -1442,42 +1442,28 @@ def index_threads(records: list):
 def build_context(record: dict, by_id: dict, thread_order: dict,
                   consultation_prompt: str = "", is_consultation: bool = False):
     """Returns (context_text, context_type, has_context).
-    Threads are used only when they are real (never for comments without a thread)."""
+    Thread context comes only from reply links (parent and direct replies). Neighbouring comments
+    in file order are not used, because file order is not evidence that one comment replies to another."""
     parts, context_type = [], "NONE"
     focal_id = record["comment_id"]
     thread_id = record["thread_id"]
     parent_id = record.get("parent_comment_id")
 
     if thread_id != DEFAULT_THREAD:
-        order = thread_order.get(thread_id, [focal_id])
-        idx = order.index(focal_id) if focal_id in order else 0
-
         parent = by_id.get(parent_id) if parent_id else None
-        if parent and parent["thread_id"] != thread_id:
-            parent = None
-        if parent:
+        if parent and parent["thread_id"] == thread_id:
             parts.append(f"PARENT COMMENT:\n{parent['comment_text']}")
             context_type = "PARENT_REPLY"
 
-        for pid in order[max(0, idx - 2):idx]:
-            if pid == parent_id:
-                continue
-            parts.append(f"PRECEDING COMMENT:\n{by_id[pid]['comment_text']}")
-            if context_type == "NONE":
-                context_type = "THREAD_WINDOW"
-
-        following = next((by_id[c] for c in order if by_id[c].get("parent_comment_id") == focal_id), None)
+        following = next(
+            (by_id[c] for c in thread_order.get(thread_id, [])
+             if by_id[c].get("parent_comment_id") == focal_id),
+            None,
+        )
         if following:
             parts.append(f"FOLLOWING REPLY:\n{following['comment_text']}")
             if context_type == "NONE":
                 context_type = "THREAD_WINDOW"
-
-        if order:
-            root = by_id[order[0]]
-            if root["comment_id"] not in (focal_id, parent_id) and not root.get("parent_comment_id"):
-                parts.append(f"ORIGINAL POST:\n{root['comment_text']}")
-                if context_type == "NONE":
-                    context_type = "ORIGINAL_POST"
 
     if is_consultation and consultation_prompt and consultation_prompt.strip():
         parts.append(f"CONSULTATION QUESTION / POLICY CONTEXT:\n{consultation_prompt.strip()}")
