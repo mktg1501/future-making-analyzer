@@ -797,52 +797,6 @@ def _render_analysis(valid: list, results: list, pseudo: bool, pf_text: str, inc
             st.markdown(f"**Objective:** {_neutral(pg['objective'])}")
 
 
-def _linked_pairs_section(results: list, pseudo: bool, include_assumed: bool):
-    st.markdown("### Linked pairs for human review")
-    st.caption(PAIR_NOTE)
-    candidates = compute_challenge_review_candidates(results, include_assumed=include_assumed)
-    if not any(candidates.values()):
-        st.info("No linked pairs to review under the current link setting.")
-        return
-
-    for key, meta in CHALLENGE_DEFINITIONS.items():
-        pairs = candidates.get(key, [])
-        if not pairs:
-            continue
-        st.markdown(f"**{meta['label']}: {len(pairs)} pair(s)**")
-        st.caption(meta["definition"])
-        for pair in pairs:
-            p, rp = pair["parent"], pair["reply"]
-            st.markdown(
-                f"**{_author_label(p, pseudo) or p['_comment_id']} ({_label3(p)}) → "
-                f"{_author_label(rp, pseudo) or rp['_comment_id']} ({_label3(rp)})**"
-            )
-            st.markdown("> " + _one_line(p["_comment_text"]))
-            st.markdown("> " + _one_line(rp["_comment_text"]))
-            st.caption("Link basis: " + _link_basis(pair.get("link_source")))
-            st.selectbox("Researcher decision", DECISION_OPTIONS, key=f"decision_{_pair_id(pair)}")
-            st.divider()
-
-    decision_rows = []
-    for key, meta in CHALLENGE_DEFINITIONS.items():
-        for pair in candidates.get(key, []):
-            pid = _pair_id(pair)
-            decision_rows.append({
-                "Pair": pid,
-                "Challenge (for review)": meta["label"],
-                "Link basis": _link_basis(pair.get("link_source")),
-                "Researcher decision": st.session_state.get(f"decision_{pid}", "Not reviewed"),
-            })
-    if decision_rows:
-        df = pd.DataFrame(decision_rows)
-        st.download_button(
-            "Download review decisions (CSV)",
-            data=df.to_csv(index=False).encode("utf-8-sig"),
-            file_name="review_decisions.csv",
-            mime="text/csv",
-        )
-
-
 def _show_dashboard(stored: dict, pseudo: bool, include_assumed: bool):
     results = stored["results"]
     valid = [r for r in results if "_error" not in r]
@@ -886,24 +840,6 @@ def _show_dashboard(stored: dict, pseudo: bool, include_assumed: bool):
         st.dataframe(pd.DataFrame(rows), hide_index=True)
 
     _render_analysis(valid, results, pseudo, pf_text, include_assumed)
-
-    _linked_pairs_section(results, pseudo, include_assumed)
-
-    with st.expander("How this follows the manuscript's method"):
-        st.markdown(
-            "- **Sources.** Consumer texts (interviews, social media, forums, public consultations) are classified. "
-            "Institutional and media texts are used to define the prescribed future, not classified (Table 1).\n"
-            "- **Dominant activity.** Each comment is classified by its dominant activity: evaluation, negotiation, or "
-            "enactment. A comment is negotiation when its overall function is to advocate, question, reject, or contest a "
-            "collective trajectory.\n"
-            "- **Orientations.** Orientations are assigned from the full configuration of narrative, goal, emotion, "
-            "temporality, and practice, not from sentiment or keywords alone (Section C of the prompt).\n"
-            "- **Links.** Each link states its basis. Links assumed by the tool are excluded from challenge review "
-            "unless the user includes them.\n"
-            "- **Challenges.** The three future-making challenges arise across linked comments and are not assigned to a single comment. "
-            "The manuscript presents fragile futures as a conditional account; this tool does not score them.\n"
-            "- **Limits.** The tool is a demonstration. Its results need interpretation with the full comments and context."
-        )
 
     st.markdown("### Results table")
     rows = []
